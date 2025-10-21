@@ -50,11 +50,11 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showingSettings) {
-                SettingsView()
+                SettingsScreen()
                     .environmentObject(appState)
             }
             .sheet(isPresented: $showingHistory) {
-                HistoryView()
+                HistoryScreen()
                     .environmentObject(appState)
             }
             .task {
@@ -198,7 +198,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showingSessionSheet) {
-            StartExposureView()
+            StartExposureScreen()
                 .environmentObject(appState)
         }
     }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct HistoryView: View {
+struct HistoryScreen: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
 

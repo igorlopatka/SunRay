@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct StartExposureView: View {
+struct StartExposureScreen: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
 
