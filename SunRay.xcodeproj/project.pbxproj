@@ -260,6 +260,7 @@
 				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "Record these vitDs & UVs";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Share these vitDs & UVs";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Update these vitDs & UVs";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Chasing sun in your location";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -296,6 +297,7 @@
 				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "Record these vitDs & UVs";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Share these vitDs & UVs";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Update these vitDs & UVs";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Chasing sun in your location";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
