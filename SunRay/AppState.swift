@@ -9,7 +9,7 @@ final class AppState: ObservableObject {
     let locationService = LocationService()
     let uvService = UVService()
     let sunService = SunPositionService()
-    let hkService: HealthKitProviding = NoOpHealthKitService()
+    let hkService: HealthKitProviding
     let persistence = PersistenceStore()
 
     // User settings
@@ -109,7 +109,13 @@ final class AppState: ObservableObject {
         return .init(durationMinutes: Int(minutes.rounded()), windowText: window)
     }
 
-    init() { }
+    init() {
+        #if canImport(HealthKit)
+        self.hkService = HealthKitService()
+        #else
+        self.hkService = NoOpHealthKitService()
+        #endif
+    }
 
     static let preview: AppState = {
         let s = AppState()
@@ -133,7 +139,7 @@ final class AppState: ObservableObject {
             activeAlert = .init(title: "Location", message: "Location permission is required for UV estimation.")
         }
 
-        // No-op HealthKit: always false without capability
+        // HealthKit authorization (may be false on unsupported devices)
         do {
             healthKitAuthorized = try await hkService.requestAuthorization()
         } catch {
@@ -191,7 +197,7 @@ final class AppState: ObservableObject {
         )
         session.estimatedIU = iu
 
-        // No-op HealthKit save (ignored without capability)
+        // Save to HealthKit (ignored on unsupported platforms)
         _ = try? await hkService.saveUVExposure(durationMinutes: minutes, uvIndex: uv, location: locationService.location)
 
         todaySynthesizedIU += iu
@@ -201,3 +207,4 @@ final class AppState: ObservableObject {
         activeSession = nil
     }
 }
+

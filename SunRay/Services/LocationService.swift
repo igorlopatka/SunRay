@@ -22,9 +22,11 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
         guard CLLocationManager.locationServicesEnabled() else {
             throw NSError(domain: "Location", code: 1, userInfo: [NSLocalizedDescriptionKey: "Location services disabled"])
         }
+
         switch manager.authorizationStatus {
         case .notDetermined:
             manager.requestWhenInUseAuthorization()
+            // Let delegate callback handle subsequent flow.
         case .authorizedAlways, .authorizedWhenInUse:
             manager.startUpdatingLocation()
         case .denied, .restricted:
@@ -45,20 +47,24 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
         guard let loc = locations.last else { return }
         location = loc
         onLocationUpdate?(loc)
-        Task { await reverseGeocode(loc) }
+
+        // Run reverse geocoding off the main actor to avoid UI stalls.
+        Task.detached { [weak self] in
+            guard let placemark = try? await Self.reverseGeocodeOffMain(loc) else { return }
+            await MainActor.run {
+                self?.placemark = placemark
+            }
+        }
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         // Silent for MVP
     }
 
-    private func reverseGeocode(_ location: CLLocation) async {
+    // Nonisolated helper that runs off the main actor.
+    nonisolated private static func reverseGeocodeOffMain(_ location: CLLocation) async throws -> CLPlacemark? {
         let geocoder = CLGeocoder()
-        do {
-            let placemarks = try await geocoder.reverseGeocodeLocation(location)
-            placemark = placemarks.first
-        } catch {
-            placemark = nil
-        }
+        let placemarks = try await geocoder.reverseGeocodeLocation(location)
+        return placemarks.first
     }
 }
