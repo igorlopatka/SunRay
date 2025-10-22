@@ -8,27 +8,33 @@
 import SwiftUI
 
 struct ContentView: View {
+    
     @EnvironmentObject private var appState: AppState
     @State private var showingSettings = false
     @State private var showingHistory = false
     @State private var showingSessionSheet = false
+    @State private var isRefreshing = false
 
     var body: some View {
+        
         NavigationStack {
-            VStack(spacing: 20) {
-                header
+            
+            ScrollView {
+                VStack(spacing: 20) {
+                    header
 
-                uvCard
+                    uvCard
 
-                progressCard
+                    progressCard
 
-                sessionControls
+                    sessionControls
 
-                Spacer(minLength: 12)
+                    Spacer(minLength: 12)
 
-                footerTips
+                    footerTips
+                }
+                .padding()
             }
-            .padding()
             .navigationTitle("SunRay")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -48,6 +54,23 @@ struct ContentView: View {
                     }
                     .accessibilityLabel("Settings")
                 }
+
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        Task {
+                            isRefreshing = true
+                            defer { isRefreshing = false }
+                            await appState.refreshEnvironmentalData()
+                        }
+                    } label: {
+                        if isRefreshing {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .accessibilityLabel("Refresh")
+                }
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsScreen()
@@ -60,7 +83,15 @@ struct ContentView: View {
             .task {
                 await appState.bootstrap()
             }
-            .alert(item: $appState.activeAlert) { (alert: AppState.UIAlert) in
+            .refreshable {
+                await appState.refreshEnvironmentalData()
+            }
+            .alert(
+                item: Binding(
+                    get: { appState.activeAlert },
+                    set: { appState.activeAlert = $0 }
+                )
+            ) { (alert: AppState.UIAlert) in
                 Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("OK")))
             }
         }
@@ -100,8 +131,6 @@ struct ContentView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 6) {
                     Label("\(appState.cloudCoverString) clouds", systemImage: "cloud.fill")
-                        .foregroundStyle(.secondary)
-                    Label(appState.solarElevationString, systemImage: "sun.horizon.fill")
                         .foregroundStyle(.secondary)
                 }
             }

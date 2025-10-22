@@ -8,7 +8,6 @@ final class AppState: ObservableObject {
     // Services
     let locationService = LocationService()
     let uvService = UVService()
-    let sunService = SunPositionService()
     let hkService: HealthKitProviding
     let persistence = PersistenceStore()
 
@@ -18,7 +17,6 @@ final class AppState: ObservableObject {
     // Live data
     @Published var currentUVIndex: Double? = nil
     @Published var cloudCover: Double? = nil
-    @Published var solarElevation: Double? = nil
 
     // Sessions
     @Published private(set) var activeSession: ExposureSession? = nil
@@ -76,11 +74,6 @@ final class AppState: ObservableObject {
         return "\(Int(cc * 100))%"
     }
 
-    var solarElevationString: String {
-        guard let elev = solarElevation else { return "—°" }
-        return "\(Int(elev))°"
-    }
-
     var uvAdvisory: String {
         guard let uv = currentUVIndex else { return "—" }
         if uv < 3 { return "Low risk. Synthesis may be limited." }
@@ -97,15 +90,14 @@ final class AppState: ObservableObject {
     }
 
     var exposureRecommendation: ExposureRecommendation? {
-        guard let uv = currentUVIndex, let elev = solarElevation else { return nil }
+        guard let uv = currentUVIndex else { return nil }
         let minutes = VitaminDModel.recommendedMinutesToGoal(
             currentUV: uv,
-            solarElevation: elev,
             cloudCover: cloudCover ?? 0,
             settings: settings
         )
         guard minutes > 0, minutes.isFinite else { return nil }
-        let window = (uv >= 3 && elev > 15) ? "now" : "later today"
+        let window = (uv >= 3) ? "now" : "later today"
         return .init(durationMinutes: Int(minutes.rounded()), windowText: window)
     }
 
@@ -121,7 +113,6 @@ final class AppState: ObservableObject {
         let s = AppState()
         s.currentUVIndex = 5.4
         s.cloudCover = 0.2
-        s.solarElevation = 45
         s.settings = UserSettings()
         s.todaySynthesizedIU = 400
         return s
@@ -154,17 +145,14 @@ final class AppState: ObservableObject {
 
     func refreshEnvironmentalData() async {
         guard let loc = locationService.location else { return }
-        async let uvInfo = uvService.currentUV(for: loc)
-        async let elevation = sunService.solarElevation(for: loc, at: Date())
         do {
-            let (uv, cc) = try await uvInfo
+            let (uv, cc) = try await uvService.currentUV(for: loc)
             currentUVIndex = uv
             cloudCover = cc
         } catch {
             currentUVIndex = nil
             cloudCover = nil
         }
-        solarElevation = await elevation
     }
 
     func startSession(spf: Int, exposedPercent: Double) {
@@ -184,12 +172,11 @@ final class AppState: ObservableObject {
         guard var session = activeSession else { return }
         session.end = Date()
 
-        let (uv, elev, cc) = (currentUVIndex ?? 0, solarElevation ?? 0, cloudCover ?? 0)
+        let (uv, cc) = (currentUVIndex ?? 0, cloudCover ?? 0)
         let minutes = max(0, session.durationMinutes)
         let iu = VitaminDModel.estimateSynthesizedIU(
             uvIndex: uv,
             minutes: Double(minutes),
-            solarElevation: elev,
             cloudCover: cc,
             skinType: session.skinType,
             spf: session.spf,

@@ -30,11 +30,10 @@ struct StartExposureScreen: View {
                     }
                 }
 
-                if let uv = appState.currentUVIndex, let elev = appState.solarElevation {
+                if let uv = appState.currentUVIndex {
                     let iuPer30 = VitaminDModel.estimateSynthesizedIU(
                         uvIndex: uv,
                         minutes: 30,
-                        solarElevation: elev,
                         cloudCover: appState.cloudCover ?? 0,
                         skinType: appState.settings.skinType,
                         spf: spf,
@@ -71,3 +70,4 @@ struct StartExposureScreen: View {
         }
     }
 }
+
