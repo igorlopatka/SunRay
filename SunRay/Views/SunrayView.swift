@@ -1,5 +1,6 @@
 import SwiftUI
 import MetalKit
+import os
 
 struct SunrayView: UIViewRepresentable {
     func makeUIView(context: Context) -> MTKView {
