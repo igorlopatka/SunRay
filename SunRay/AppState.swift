@@ -185,7 +185,11 @@ final class AppState: ObservableObject {
         session.estimatedIU = iu
 
         // Save to HealthKit (ignored on unsupported platforms)
-        _ = try? await hkService.saveUVExposure(durationMinutes: minutes, uvIndex: uv, location: locationService.location)
+        do {
+            try await hkService.saveUVExposure(durationMinutes: minutes, uvIndex: uv, location: locationService.location)
+        } catch {
+            print("AppState: HealthKit saveUVExposure failed: \(error)")
+        }
 
         todaySynthesizedIU += iu
         history.insert(session, at: 0)

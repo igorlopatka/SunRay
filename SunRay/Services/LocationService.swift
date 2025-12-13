@@ -169,7 +169,7 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
             shouldGeocodeByDistance = true
         }
         let shouldGeocodeByTime: Bool
-        if let last = lastGeocodedDate ?? lastGeocodeDate {
+        if let last = lastGeocodeDate {
             shouldGeocodeByTime = now.timeIntervalSince(last) >= geocodeMinInterval
         } else {
             shouldGeocodeByTime = true
