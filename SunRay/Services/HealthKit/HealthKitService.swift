@@ -1,6 +1,7 @@
 import Foundation
 import HealthKit
 import CoreLocation
+import os
 
 enum HealthKitError: Error {
     case unavailableType

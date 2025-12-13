@@ -1,6 +1,7 @@
 import Foundation
 import CoreLocation
 import Combine
+import os
 
 @MainActor
 final class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
@@ -196,3 +197,4 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
         return placemarks.first
     }
 }
+
