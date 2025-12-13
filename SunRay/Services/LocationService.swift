@@ -51,7 +51,11 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
             authorizationStatus = manager.authorizationStatus
             startUpdating()
             // Also request a one-shot to speed up first fix
-            _ = try? await requestSingleLocation()
+            do {
+                _ = try await requestSingleLocation()
+            } catch {
+                print("LocationService: one-shot location failed: \(error)")
+            }
 
         case .denied, .restricted:
             authorizationStatus = manager.authorizationStatus
@@ -80,7 +84,11 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
             // Prime a quick fix if we don't have one
             if location == nil {
                 Task {
-                    _ = try? await requestSingleLocation()
+                    do {
+                        _ = try await requestSingleLocation()
+                    } catch {
+                        print("LocationService: priming one-shot location failed: \(error)")
+                    }
                 }
             }
         case .denied, .restricted:
@@ -130,7 +138,11 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
         case .authorizedAlways, .authorizedWhenInUse:
             startUpdating()
             Task {
-                _ = try? await requestSingleLocation()
+                do {
+                    _ = try await requestSingleLocation()
+                } catch {
+                    print("LocationService: post-authorization one-shot failed: \(error)")
+                }
             }
         case .denied, .restricted:
             throw NSError(domain: "Location", code: 2, userInfo: [NSLocalizedDescriptionKey: "Location permission denied or restricted"])
@@ -156,7 +168,12 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
         } else {
             shouldGeocodeByDistance = true
         }
-        let shouldGeocodeByTime = (lastGeocodeDate == nil) || (now.timeIntervalSince(lastGeocodeDate!) >= geocodeMinInterval)
+        let shouldGeocodeByTime: Bool
+        if let last = lastGeocodedDate ?? lastGeocodeDate {
+            shouldGeocodeByTime = now.timeIntervalSince(last) >= geocodeMinInterval
+        } else {
+            shouldGeocodeByTime = true
+        }
 
         guard shouldGeocodeByDistance || shouldGeocodeByTime else { return }
 
