@@ -7,7 +7,7 @@ actor PersistenceStore {
     private let decoder = JSONDecoder()
 
     init() {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
         settingsURL = dir.appendingPathComponent("settings.json")
         historyURL = dir.appendingPathComponent("history.json")
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -17,7 +17,9 @@ actor PersistenceStore {
         do {
             let data = try encoder.encode(settings)
             try data.write(to: settingsURL, options: .atomic)
-        } catch { }
+        } catch {
+            print("PersistenceStore.saveSettings error writing to \(settingsURL): \(error)")
+        }
     }
 
     func loadSettings() async -> UserSettings? {
@@ -25,6 +27,7 @@ actor PersistenceStore {
             let data = try Data(contentsOf: settingsURL)
             return try decoder.decode(UserSettings.self, from: data)
         } catch {
+            print("PersistenceStore.loadSettings error reading from \(settingsURL): \(error)")
             return nil
         }
     }
@@ -33,14 +36,17 @@ actor PersistenceStore {
         do {
             let data = try encoder.encode(history)
             try data.write(to: historyURL, options: .atomic)
-        } catch { }
+        } catch {
+            print("PersistenceStore.saveHistory error writing to \(historyURL): \(error)")
+        }
     }
 
-    func loadHistory() -> [ExposureSession] {
+    func loadHistory() async -> [ExposureSession] {
         do {
             let data = try Data(contentsOf: historyURL)
             return try decoder.decode([ExposureSession].self, from: data)
         } catch {
+            print("PersistenceStore.loadHistory error reading from \(historyURL): \(error)")
             return []
         }
     }

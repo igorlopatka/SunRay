@@ -16,7 +16,7 @@ struct StartExposureScreen: View {
         NavigationStack {
             Form {
                 Section("Session Settings") {
-                    Stepper("SPF \(spf)", value: $spf, in: 0...100)
+                    Stepper("SPF \(spf)", value: $spf, in: 1...100)
                     HStack {
                         Text("Exposed Skin")
                         Spacer()
@@ -65,6 +65,7 @@ struct StartExposureScreen: View {
             }
             .onAppear {
                 spf = appState.isSessionActive ? (appState.activeSession?.spf ?? appState.settings.defaultSPF) : appState.settings.defaultSPF
+                spf = max(1, spf)
                 exposedPercent = appState.isSessionActive ? (appState.activeSession?.exposedSkinPercent ?? appState.settings.defaultExposedPercent) : appState.settings.defaultExposedPercent
             }
         }

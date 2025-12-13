@@ -4,8 +4,8 @@ enum VitaminDModel {
     static let baseIUPerMinuteAtUV1: Double = 20
 
     static func attenuationForSPF(_ spf: Int) -> Double {
-        guard spf > 1 else { return 1.0 }
-        return 1.0 / Double(spf)
+        let safeSPF = max(1, spf)
+        return 1.0 / Double(safeSPF)
     }
 
     static func cloudCoverFactor(_ cloudCover: Double) -> Double {
