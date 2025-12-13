@@ -13,6 +13,8 @@ struct SunrayView: UIViewRepresentable {
         if let renderer = SunrayRenderer(mtkView: mtk) {
             mtk.delegate = renderer
             context.coordinator.renderer = renderer
+        } else {
+            SRLog("SunrayView: SunrayRenderer failed to initialize; Metal overlay disabled", level: .error)
         }
         mtk.isUserInteractionEnabled = false
         mtk.backgroundColor = .clear
@@ -44,6 +46,8 @@ extension SunrayView: NSViewRepresentable {
         if let renderer = SunrayRenderer(mtkView: mtk) {
             mtk.delegate = renderer
             context.coordinator.renderer = renderer
+        } else {
+            SRLog("SunrayView (macOS): SunrayRenderer failed to initialize; Metal overlay disabled", level: .error)
         }
         mtk.isUserInteractionEnabled = false
         mtk.wantsLayer = true

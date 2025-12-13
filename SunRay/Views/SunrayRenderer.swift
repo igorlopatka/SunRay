@@ -1,6 +1,8 @@
 import Foundation
 import MetalKit
 
+import os
+
 final class SunrayRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
     private var pipelineState: MTLRenderPipelineState!
@@ -27,13 +29,25 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         commandQueue = device.makeCommandQueue()
 
         do {
-            let lib = try device.makeDefaultLibrary(bundle: .main)
+            let lib: MTLLibrary
+            if let defaultLib = device.makeDefaultLibrary() {
+                lib = defaultLib
+            } else {
+                lib = try device.makeDefaultLibrary(bundle: .main)
+            }
+
+            guard let vfn = lib.makeFunction(name: "vs_main"), let ffn = lib.makeFunction(name: "fs_main") else {
+                SRLog("SunrayRenderer: shader functions not found in library", level: .error)
+                return nil
+            }
+
             let desc = MTLRenderPipelineDescriptor()
-            desc.vertexFunction = lib.makeFunction(name: "vs_main")
-            desc.fragmentFunction = lib.makeFunction(name: "fs_main")
+            desc.vertexFunction = vfn
+            desc.fragmentFunction = ffn
             desc.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
             pipelineState = try device.makeRenderPipelineState(descriptor: desc)
         } catch {
+            SRLog("SunrayRenderer init failed: \(error)", level: .error)
             return nil
         }
     }
