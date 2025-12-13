@@ -18,7 +18,7 @@ actor PersistenceStore {
             let data = try encoder.encode(settings)
             try data.write(to: settingsURL, options: .atomic)
         } catch {
-            print("PersistenceStore.saveSettings error writing to \(settingsURL): \(error)")
+            SRLog("PersistenceStore.saveSettings error writing to \(settingsURL): \(error)", level: .error)
         }
     }
 
@@ -27,7 +27,7 @@ actor PersistenceStore {
             let data = try Data(contentsOf: settingsURL)
             return try decoder.decode(UserSettings.self, from: data)
         } catch {
-            print("PersistenceStore.loadSettings error reading from \(settingsURL): \(error)")
+            SRLog("PersistenceStore.loadSettings error reading from \(settingsURL): \(error)", level: .error)
             return nil
         }
     }
@@ -37,7 +37,7 @@ actor PersistenceStore {
             let data = try encoder.encode(history)
             try data.write(to: historyURL, options: .atomic)
         } catch {
-            print("PersistenceStore.saveHistory error writing to \(historyURL): \(error)")
+            SRLog("PersistenceStore.saveHistory error writing to \(historyURL): \(error)", level: .error)
         }
     }
 
@@ -46,7 +46,7 @@ actor PersistenceStore {
             let data = try Data(contentsOf: historyURL)
             return try decoder.decode([ExposureSession].self, from: data)
         } catch {
-            print("PersistenceStore.loadHistory error reading from \(historyURL): \(error)")
+            SRLog("PersistenceStore.loadHistory error reading from \(historyURL): \(error)", level: .error)
             return []
         }
     }

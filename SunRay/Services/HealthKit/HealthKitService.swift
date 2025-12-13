@@ -22,7 +22,7 @@ final class HealthKitService: HealthKitProviding {
         guard HKHealthStore.isHealthDataAvailable() else { return false }
 
         guard let uv = uvExposureType, let dietary = dietaryVitaminDType else {
-            print("HealthKitService: required quantity types unavailable")
+            SRLog("HealthKitService: required quantity types unavailable", level: .error)
             return false
         }
 

@@ -188,7 +188,7 @@ final class AppState: ObservableObject {
         do {
             try await hkService.saveUVExposure(durationMinutes: minutes, uvIndex: uv, location: locationService.location)
         } catch {
-            print("AppState: HealthKit saveUVExposure failed: \(error)")
+            SRLog("AppState: HealthKit saveUVExposure failed: \(error)", level: .error)
         }
 
         todaySynthesizedIU += iu

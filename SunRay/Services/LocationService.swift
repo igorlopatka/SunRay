@@ -54,7 +54,7 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
             do {
                 _ = try await requestSingleLocation()
             } catch {
-                print("LocationService: one-shot location failed: \(error)")
+                SRLog("LocationService: one-shot location failed: \(error)", level: .error)
             }
 
         case .denied, .restricted:
@@ -87,7 +87,7 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
                     do {
                         _ = try await requestSingleLocation()
                     } catch {
-                        print("LocationService: priming one-shot location failed: \(error)")
+                        SRLog("LocationService: priming one-shot location failed: \(error)", level: .error)
                     }
                 }
             }
@@ -141,7 +141,7 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
                 do {
                     _ = try await requestSingleLocation()
                 } catch {
-                    print("LocationService: post-authorization one-shot failed: \(error)")
+                    SRLog("LocationService: post-authorization one-shot failed: \(error)", level: .error)
                 }
             }
         case .denied, .restricted:
