@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import Combine
 import CoreLocation
+import os
 
 @MainActor
 final class AppState: ObservableObject {

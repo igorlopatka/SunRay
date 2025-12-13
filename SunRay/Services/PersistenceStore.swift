@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 actor PersistenceStore {
     private let settingsURL: URL
@@ -15,7 +16,9 @@ actor PersistenceStore {
 
     func saveSettings(_ settings: UserSettings) async {
         do {
-            let data = try encoder.encode(settings)
+            let data = try await MainActor.run { () throws -> Data in
+                try encoder.encode(settings)
+            }
             try data.write(to: settingsURL, options: .atomic)
         } catch {
             SRLog("PersistenceStore.saveSettings error writing to \(settingsURL): \(error)", level: .error)
@@ -25,7 +28,9 @@ actor PersistenceStore {
     func loadSettings() async -> UserSettings? {
         do {
             let data = try Data(contentsOf: settingsURL)
-            return try decoder.decode(UserSettings.self, from: data)
+            return try await MainActor.run { () throws -> UserSettings in
+                try decoder.decode(UserSettings.self, from: data)
+            }
         } catch {
             SRLog("PersistenceStore.loadSettings error reading from \(settingsURL): \(error)", level: .error)
             return nil
@@ -34,7 +39,9 @@ actor PersistenceStore {
 
     func saveHistory(_ history: [ExposureSession]) async {
         do {
-            let data = try encoder.encode(history)
+            let data = try await MainActor.run { () throws -> Data in
+                try encoder.encode(history)
+            }
             try data.write(to: historyURL, options: .atomic)
         } catch {
             SRLog("PersistenceStore.saveHistory error writing to \(historyURL): \(error)", level: .error)
@@ -44,10 +51,13 @@ actor PersistenceStore {
     func loadHistory() async -> [ExposureSession] {
         do {
             let data = try Data(contentsOf: historyURL)
-            return try decoder.decode([ExposureSession].self, from: data)
+            return try await MainActor.run { () throws -> [ExposureSession] in
+                try decoder.decode([ExposureSession].self, from: data)
+            }
         } catch {
             SRLog("PersistenceStore.loadHistory error reading from \(historyURL): \(error)", level: .error)
             return []
         }
     }
 }
+
