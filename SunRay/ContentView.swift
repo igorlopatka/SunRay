@@ -35,7 +35,12 @@ struct ContentView: View {
                 }
                 .padding()
             }
-            .sunrays(opacity: 0.28)
+            .overlay(alignment: .topLeading) {
+                SunrayView()
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
+                    .opacity(0.28)
+            }
             .navigationTitle("SunRay")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

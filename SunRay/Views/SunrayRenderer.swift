@@ -45,6 +45,15 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
             desc.vertexFunction = vfn
             desc.fragmentFunction = ffn
             desc.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
+            if let att = desc.colorAttachments[0] {
+                att.isBlendingEnabled = true
+                att.rgbBlendOperation = .add
+                att.alphaBlendOperation = .add
+                att.sourceRGBBlendFactor = .sourceAlpha
+                att.destinationRGBBlendFactor = .oneMinusSourceAlpha
+                att.sourceAlphaBlendFactor = .one
+                att.destinationAlphaBlendFactor = .oneMinusSourceAlpha
+            }
             pipelineState = try device.makeRenderPipelineState(descriptor: desc)
         } catch {
             SRLog("SunrayRenderer init failed: \(error)", level: .error)
@@ -75,6 +84,16 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         guard let cmdBuf = commandQueue.makeCommandBuffer(),
               let encoder = cmdBuf.makeRenderCommandEncoder(descriptor: descriptor) else { return }
 
+        // Ensure viewport matches drawable size
+        encoder.setViewport(MTLViewport(
+            originX: 0,
+            originY: 0,
+            width: Double(view.drawableSize.width),
+            height: Double(view.drawableSize.height),
+            znear: 0,
+            zfar: 1
+        ))
+
         encoder.setRenderPipelineState(pipelineState)
         encoder.setFragmentBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 0)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
@@ -83,3 +102,4 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         cmdBuf.commit()
     }
 }
+

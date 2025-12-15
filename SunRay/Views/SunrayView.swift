@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import SwiftUI
 import MetalKit
 import os
@@ -33,9 +34,13 @@ struct SunrayView: UIViewRepresentable {
     }
 }
 
-#if os(macOS)
+#elseif canImport(AppKit)
+import SwiftUI
+import MetalKit
 import AppKit
-extension SunrayView: NSViewRepresentable {
+import os
+
+struct SunrayView: NSViewRepresentable {
     func makeNSView(context: Context) -> MTKView {
         let mtk = MTKView()
         mtk.device = MTLCreateSystemDefaultDevice()
@@ -55,6 +60,14 @@ extension SunrayView: NSViewRepresentable {
         return mtk
     }
 
-    func updateNSView(_ nsView: MTKView, context: Context) {}
+    func updateNSView(_ nsView: MTKView, context: Context) {
+        // keep sun position in corner by default; could be driven by app state
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    class Coordinator {
+        var renderer: SunrayRenderer?
+    }
 }
 #endif
