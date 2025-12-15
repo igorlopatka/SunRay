@@ -145,12 +145,17 @@ final class AppState: ObservableObject {
     }
 
     func refreshEnvironmentalData() async {
-        guard let loc = locationService.location else { return }
+        guard let loc = locationService.location else {
+            SRLog("refreshEnvironmentalData: location is nil", level: .error)
+            return
+        }
         do {
             let (uv, cc) = try await uvService.currentUV(for: loc)
+            SRLog("refreshEnvironmentalData: uv=\(uv), cloud=\(cc)", level: .info)
             currentUVIndex = uv
             cloudCover = cc
         } catch {
+            SRLog("refreshEnvironmentalData failed: \(error)", level: .error)
             currentUVIndex = nil
             cloudCover = nil
         }
