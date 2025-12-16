@@ -43,14 +43,17 @@ fragment float4 fs_main(VertexOut in [[stage_in]],
     float r = length(d) + 1e-5;
     float angle = atan2(d.y, d.x);
 
-    // Ray pattern: combine angular and radial terms
-    float rays = 0.5 + 0.5 * sin(10.0 * angle + 5.0 / r + u.time * 0.5);
+    // Radial beam pattern: angular lobes (no inverse-radius spiral term)
+    float angularFreq = 12.0; // number of beams around the sun
+    float phase = u.time * 0.5;
+    float raw = cos(angularFreq * angle + phase);
+    float beams = pow(abs(raw), 1.0 + max(0.0, u.beamWidth) * 3.0);
 
-    // Smooth falloff from the source
+    // Soft edge for beams: sharpen or soften using smoothstep
+    float beam = smoothstep(0.15, 0.95, beams);
+
+    // Smooth radial falloff (soft sunglow)
     float falloff = exp(-r * 3.0);
-
-    // Beam shaping (optional): narrower or wider beams
-    float beam = smoothstep(0.0, 1.0, pow(rays, max(0.1, u.beamWidth)));
 
     float brightness = u.intensity * beam * falloff;
     float3 col = u.color * brightness;
