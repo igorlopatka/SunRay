@@ -26,6 +26,7 @@ struct Uniforms {
     float intensity;
     float aspect;
     float beamWidth;
+    float beamCount;
     float3 color;
 };
 
@@ -44,7 +45,7 @@ fragment float4 fs_main(VertexOut in [[stage_in]],
     float angle = atan2(d.y, d.x);
 
     // Radial beam pattern: angular lobes (no inverse-radius spiral term)
-    float angularFreq = 12.0; // number of beams around the sun
+    float angularFreq = max(1.0, u.beamCount);
     float phase = u.time * 0.5;
     float raw = cos(angularFreq * angle + phase);
     float beams = pow(abs(raw), 1.0 + max(0.0, u.beamWidth) * 3.0);

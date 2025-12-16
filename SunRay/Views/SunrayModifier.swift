@@ -10,6 +10,30 @@ struct SunrayModifier: ViewModifier {
                 .allowsHitTesting(false)
                 .opacity(opacity)
                 .ignoresSafeArea()
+            // Top-right toggle + debug panel (visible at runtime)
+            VStack {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Button(action: { SunrayDebugSettings.shared.isVisible.toggle() }) {
+                            Text("☀︎")
+                                .font(.system(size: 16, weight: .semibold))
+                                .frame(width: 36, height: 36)
+                                .background(Color.black.opacity(0.35))
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
+                        }
+                        if SunrayDebugSettings.shared.isVisible {
+                            SunrayDebugView()
+                                .frame(maxWidth: 340)
+                                .transition(.move(edge: .trailing).combined(with: .opacity))
+                        }
+                    }
+                    .padding()
+                }
+                Spacer()
+            }
+            .allowsHitTesting(true)
         }
     }
 }

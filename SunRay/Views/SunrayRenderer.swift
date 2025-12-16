@@ -15,6 +15,7 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         var intensity: Float
         var aspect: Float
         var beamWidth: Float
+        var beamCount: Float
         var color: SIMD3<Float>
     }
 
@@ -75,9 +76,10 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         var uniforms = Uniforms(
             sunPos: SIMD2(Float(sunPosition.x), Float(sunPosition.y)),
             time: now,
-            intensity: intensity,
+            intensity: SunrayDebugSettings.shared.intensity,
             aspect: aspect,
-            beamWidth: 0.5,
+            beamWidth: SunrayDebugSettings.shared.beamWidth,
+            beamCount: SunrayDebugSettings.shared.beamCount,
             color: color
         )
 
