@@ -14,50 +14,33 @@ actor PersistenceStore {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     }
 
-    func saveSettings(_ settings: UserSettings) async {
-        do {
-            let data = try await MainActor.run { () throws -> Data in
-                try encoder.encode(settings)
-            }
-            try data.write(to: settingsURL, options: .atomic)
-        } catch {
-            SRLog("PersistenceStore.saveSettings error writing to \(settingsURL): \(error)", level: .error)
-        }
+    func saveSettings(_ settings: UserSettings) throws {
+        let data = try encoder.encode(settings)
+        try data.write(to: settingsURL, options: .atomic)
     }
 
-    func loadSettings() async -> UserSettings? {
+    func loadSettings() -> UserSettings? {
         do {
             let data = try Data(contentsOf: settingsURL)
-            return try await MainActor.run { () throws -> UserSettings in
-                try decoder.decode(UserSettings.self, from: data)
-            }
+            return try decoder.decode(UserSettings.self, from: data)
         } catch {
             SRLog("PersistenceStore.loadSettings error reading from \(settingsURL): \(error)", level: .error)
             return nil
         }
     }
 
-    func saveHistory(_ history: [ExposureSession]) async {
-        do {
-            let data = try await MainActor.run { () throws -> Data in
-                try encoder.encode(history)
-            }
-            try data.write(to: historyURL, options: .atomic)
-        } catch {
-            SRLog("PersistenceStore.saveHistory error writing to \(historyURL): \(error)", level: .error)
-        }
+    func saveHistory(_ history: [ExposureSession]) throws {
+        let data = try encoder.encode(history)
+        try data.write(to: historyURL, options: .atomic)
     }
 
-    func loadHistory() async -> [ExposureSession] {
+    func loadHistory() -> [ExposureSession] {
         do {
             let data = try Data(contentsOf: historyURL)
-            return try await MainActor.run { () throws -> [ExposureSession] in
-                try decoder.decode([ExposureSession].self, from: data)
-            }
+            return try decoder.decode([ExposureSession].self, from: data)
         } catch {
             SRLog("PersistenceStore.loadHistory error reading from \(historyURL): \(error)", level: .error)
             return []
         }
     }
 }
-
