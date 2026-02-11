@@ -15,6 +15,12 @@ enum FitzpatrickSkinType: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    // Relative vitamin D synthesis efficiency by skin type.
+    // Higher melanin absorbs more UVB, reducing previtamin D₃ production.
+    // Factors approximate the relative dose needed to produce equivalent
+    // serum 25(OH)D levels across Fitzpatrick types.
+    // Ref: Clemens TL et al. Lancet. 1982;1(8263):74-76.
+    // Ref: Chen TC et al. J Clin Endocrinol Metab. 2007;92(6):2130-2135.
     var synthesisFactor: Double {
         switch self {
         case .I: return 1.0
