@@ -53,13 +53,13 @@ final class HealthKitService: HealthKitProviding {
 
         var metadata: [String: Any] = [
             HKMetadataKeyWasUserEntered: true,
-            "com.sunseeker.durationMinutes": durationMinutes
+            "com.sunray.durationMinutes": durationMinutes
         ]
 
         if let loc = location {
-            metadata["com.sunseeker.latitude"] = loc.coordinate.latitude
-            metadata["com.sunseeker.longitude"] = loc.coordinate.longitude
-            metadata["com.sunseeker.horizontalAccuracy"] = loc.horizontalAccuracy
+            metadata["com.sunray.latitude"] = loc.coordinate.latitude
+            metadata["com.sunray.longitude"] = loc.coordinate.longitude
+            metadata["com.sunray.horizontalAccuracy"] = loc.horizontalAccuracy
         }
 
         let sample = HKQuantitySample(

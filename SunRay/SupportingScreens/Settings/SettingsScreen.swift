@@ -36,7 +36,7 @@ struct SettingsScreen: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
-                        Task { await appState.persistence.saveSettings(appState.settings) }
+                        Task { await appState.saveSettings() }
                         dismiss()
                     }
                 }

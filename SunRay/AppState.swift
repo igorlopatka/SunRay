@@ -35,7 +35,7 @@ final class AppState: ObservableObject {
 
     var isSessionActive: Bool { activeSession != nil }
 
-    var displayName: String { "Sun Seeker" }
+    var displayName: String { "SunRay" }
 
     var locationSummary: String {
         switch locationService.authorizationStatus {
@@ -119,11 +119,20 @@ final class AppState: ObservableObject {
         return s
     }()
 
+    private func todayIUFromHistory() -> Double {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        return history
+            .filter { $0.start >= startOfToday }
+            .compactMap(\.estimatedIU)
+            .reduce(0, +)
+    }
+
     func bootstrap() async {
         if let saved = await persistence.loadSettings() {
             settings = saved
         }
         history = await persistence.loadHistory()
+        todaySynthesizedIU = todayIUFromHistory()
 
         do {
             try await locationService.requestAuthorization()
@@ -158,6 +167,16 @@ final class AppState: ObservableObject {
             SRLog("refreshEnvironmentalData failed: \(error)", level: .error)
             currentUVIndex = nil
             cloudCover = nil
+            activeAlert = .init(title: "UV Data Unavailable", message: "Could not fetch current UV index. Check your connection and try again.")
+        }
+    }
+
+    func saveSettings() async {
+        do {
+            try await persistence.saveSettings(settings)
+        } catch {
+            SRLog("AppState: saveSettings failed: \(error)", level: .error)
+            activeAlert = .init(title: "Save Failed", message: "Your settings could not be saved. Changes may be lost when the app restarts.")
         }
     }
 
@@ -199,7 +218,12 @@ final class AppState: ObservableObject {
 
         todaySynthesizedIU += iu
         history.insert(session, at: 0)
-        await persistence.saveHistory(history)
+        do {
+            try await persistence.saveHistory(history)
+        } catch {
+            SRLog("AppState: saveHistory failed: \(error)", level: .error)
+            activeAlert = .init(title: "Save Failed", message: "Your session was recorded but could not be saved to disk. It may be lost when the app restarts.")
+        }
 
         activeSession = nil
     }
