@@ -35,6 +35,8 @@ final class AppState: ObservableObject {
 
     var isSessionActive: Bool { activeSession != nil }
 
+    var allSessions: [ExposureSession] { history }
+
     var displayName: String { "SunRay" }
 
     var locationSummary: String {
@@ -226,6 +228,19 @@ final class AppState: ObservableObject {
         }
 
         activeSession = nil
+    }
+
+    func deleteSession(_ session: ExposureSession) {
+        history.removeAll { $0.id == session.id }
+        todaySynthesizedIU = todayIUFromHistory()
+        Task {
+            do {
+                try await persistence.saveHistory(history)
+            } catch {
+                SRLog("AppState: deleteSession saveHistory failed: \(error)", level: .error)
+                activeAlert = .init(title: "Delete Failed", message: "The session could not be deleted from disk.")
+            }
+        }
     }
 }
 

@@ -1,0 +1,180 @@
+//
+//  ShimmerEffect.swift
+//  SunRay
+//
+//  Shimmer and animated gradient effects for liquid glass
+//
+
+import SwiftUI
+
+struct ShimmerEffect: ViewModifier {
+    @State private var phase: CGFloat = 0
+
+    var duration: Double = 2.0
+    var bounce: Bool = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                GeometryReader { geometry in
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.3), location: 0.5),
+                            .init(color: .clear, location: 1)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .rotationEffect(.degrees(30))
+                    .offset(x: geometry.size.width * (phase - 0.5) * 2)
+                    .onAppear {
+                        withAnimation(
+                            .linear(duration: duration)
+                            .repeatForever(autoreverses: bounce)
+                        ) {
+                            phase = 1.0
+                        }
+                    }
+                }
+            }
+            .clipped()
+    }
+}
+
+extension View {
+    func shimmer(duration: Double = 2.0, bounce: Bool = false) -> some View {
+        self.modifier(ShimmerEffect(duration: duration, bounce: bounce))
+    }
+}
+
+struct AnimatedMeshGradient: View {
+    let colors: [Color]
+    @State private var phase: CGFloat = 0
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let time = timeline.date.timeIntervalSinceReferenceDate
+
+            MeshGradient(
+                width: 3,
+                height: 3,
+                points: [
+                    .init(0 + sin(time * 0.5) * 0.1, 0 + cos(time * 0.3) * 0.1),
+                    .init(0.5 + sin(time * 0.7) * 0.1, 0 + cos(time * 0.4) * 0.1),
+                    .init(1 + sin(time * 0.6) * 0.1, 0 + cos(time * 0.5) * 0.1),
+
+                    .init(0 + sin(time * 0.4) * 0.1, 0.5 + cos(time * 0.6) * 0.1),
+                    .init(0.5 + sin(time * 0.8) * 0.1, 0.5 + cos(time * 0.7) * 0.1),
+                    .init(1 + sin(time * 0.5) * 0.1, 0.5 + cos(time * 0.8) * 0.1),
+
+                    .init(0 + sin(time * 0.3) * 0.1, 1 + cos(time * 0.9) * 0.1),
+                    .init(0.5 + sin(time * 0.9) * 0.1, 1 + cos(time * 1.0) * 0.1),
+                    .init(1 + sin(time * 0.4) * 0.1, 1 + cos(time * 0.6) * 0.1)
+                ],
+                colors: colors
+            )
+        }
+    }
+}
+
+struct GlassCard<Content: View>: View {
+    let content: Content
+    @State private var isPressed = false
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.ultraThickMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .strokeBorder(
+                                .linearGradient(
+                                    colors: [.white.opacity(0.5), .white.opacity(0.1), .clear],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.5
+                            )
+                    }
+                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+            }
+            .scaleEffect(isPressed ? 0.98 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+            .onTapGesture {}
+            .onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity, pressing: { pressing in
+                isPressed = pressing
+            }, perform: {})
+    }
+}
+
+struct FloatingParticles: View {
+    @State private var particles: [Particle] = []
+
+    struct Particle: Identifiable {
+        let id = UUID()
+        var x: CGFloat
+        var y: CGFloat
+        var size: CGFloat
+        var opacity: Double
+        var speed: Double
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(particles) { particle in
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [.white.opacity(particle.opacity), .clear],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: particle.size / 2
+                            )
+                        )
+                        .frame(width: particle.size, height: particle.size)
+                        .position(x: particle.x, y: particle.y)
+                        .blur(radius: 2)
+                }
+            }
+            .onAppear {
+                createParticles(in: geometry.size)
+                startAnimation()
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func createParticles(in size: CGSize) {
+        particles = (0..<15).map { _ in
+            Particle(
+                x: CGFloat.random(in: 0...size.width),
+                y: CGFloat.random(in: 0...size.height),
+                size: CGFloat.random(in: 3...8),
+                opacity: Double.random(in: 0.1...0.4),
+                speed: Double.random(in: 20...40)
+            )
+        }
+    }
+
+    private func startAnimation() {
+        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            for i in particles.indices {
+                particles[i].y -= particles[i].speed * 0.05
+
+                if particles[i].y < -20 {
+                    particles[i].y = UIScreen.main.bounds.height + 20
+                    particles[i].x = CGFloat.random(in: 0...UIScreen.main.bounds.width)
+                }
+            }
+        }
+    }
+}

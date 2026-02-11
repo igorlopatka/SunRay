@@ -17,6 +17,9 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         var beamWidth: Float
         var beamCount: Float
         var color: SIMD3<Float>
+        var glassiness: Float
+        var refraction: Float
+        var iridescence: Float
     }
 
     var sunPosition: CGPoint = CGPoint(x: 0.85, y: 0.15)
@@ -80,7 +83,10 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
             aspect: aspect,
             beamWidth: SunrayDebugSettings.shared.beamWidth,
             beamCount: SunrayDebugSettings.shared.beamCount,
-            color: color
+            color: color,
+            glassiness: 0.8,     // Liquid glass effect strength
+            refraction: 0.5,     // Refraction intensity
+            iridescence: 0.7     // Iridescent color shifting
         )
 
         guard let cmdBuf = commandQueue.makeCommandBuffer(),

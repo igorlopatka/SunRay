@@ -13,7 +13,7 @@ struct SunRayApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
                 .environmentObject(appState)
         }
     }
