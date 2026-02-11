@@ -106,6 +106,118 @@ float3 chromaticAberration(float2 uv, float2 direction, float strength) {
     return float3(r, g, b);
 }
 
+// Voronoi pattern for glass cell structure
+float2 voronoi(float2 p) {
+    float2 n = floor(p);
+    float2 f = fract(p);
+
+    float minDist = 1.0;
+    float2 minPoint;
+
+    for (int j = -1; j <= 1; j++) {
+        for (int i = -1; i <= 1; i++) {
+            float2 neighbor = float2(float(i), float(j));
+            float2 point = neighbor + hash(n + neighbor) * float2(1.0, 1.0);
+            float2 diff = point - f;
+            float dist = length(diff);
+
+            if (dist < minDist) {
+                minDist = dist;
+                minPoint = point;
+            }
+        }
+    }
+
+    return float2(minDist, hash(n + minPoint));
+}
+
+// Caustics effect (light patterns through water/glass)
+float caustics(float2 uv, float time) {
+    float2 p = uv * 8.0;
+
+    // Layer multiple voronoi patterns with different scales
+    float c = 0.0;
+
+    // First layer - slow movement
+    float2 v1 = voronoi(p + float2(time * 0.1, time * 0.15));
+    c += pow(1.0 - v1.x, 3.0) * 0.5;
+
+    // Second layer - medium movement
+    float2 v2 = voronoi(p * 1.3 + float2(time * -0.12, time * 0.18));
+    c += pow(1.0 - v2.x, 4.0) * 0.3;
+
+    // Third layer - fast shimmering
+    float2 v3 = voronoi(p * 2.1 + float2(sin(time * 0.5) * 0.3, cos(time * 0.6) * 0.3));
+    c += pow(1.0 - v3.x, 5.0) * 0.2;
+
+    return c;
+}
+
+// Light sparkle/bokeh particles
+float sparkles(float2 uv, float time) {
+    float2 p = uv * 20.0;
+    float s = 0.0;
+
+    for (int i = 0; i < 8; i++) {
+        float fi = float(i);
+        float2 offset = float2(
+            sin(time * 0.3 + fi * 2.1) * 3.0,
+            cos(time * 0.4 + fi * 1.7) * 3.0
+        );
+
+        float2 sparklePos = floor(p + offset) + 0.5;
+        float sparkleHash = hash(sparklePos + fi);
+
+        // Only show sparkle if hash is above threshold
+        if (sparkleHash > 0.92) {
+            float2 toSparkle = fract(p + offset) - 0.5;
+            float dist = length(toSparkle);
+
+            // Pulsing sparkle
+            float pulse = sin(time * 2.0 + sparkleHash * 6.28) * 0.5 + 0.5;
+            float size = 0.05 + pulse * 0.03;
+
+            // Hexagonal bokeh shape
+            float angle = atan2(toSparkle.y, toSparkle.x);
+            float hexShape = cos(floor(0.5 + angle / 1.047) * 1.047 - angle) * dist;
+
+            float sparkle = smoothstep(size, 0.0, hexShape);
+            s += sparkle * (0.3 + pulse * 0.7);
+        }
+    }
+
+    return s;
+}
+
+// Enhanced light scattering with depth
+float3 volumetricScatter(float2 uv, float2 sunPos, float time, float aspect) {
+    float3 scatter = float3(0.0);
+
+    float2 delta = uv - sunPos;
+    delta.x *= aspect;
+
+    const int scatterSamples = 12;
+    for (int i = 0; i < scatterSamples; i++) {
+        float t = float(i) / float(scatterSamples);
+        float2 samplePos = uv - delta * t * 0.5;
+
+        // Add caustic patterns to scatter
+        float causticContrib = caustics(samplePos, time);
+
+        // Distance-based color shift
+        float3 scatterColor = mix(
+            float3(1.0, 0.9, 0.7),  // Warm near
+            float3(0.7, 0.85, 1.0),  // Cool far
+            t
+        );
+
+        float weight = (1.0 - t) * 0.15;
+        scatter += scatterColor * causticContrib * weight;
+    }
+
+    return scatter / float(scatterSamples);
+}
+
 fragment float4 fs_main(VertexOut in [[stage_in]],
                         constant Uniforms& u [[buffer(0)]]) {
     float2 uv = in.uv;
@@ -256,11 +368,25 @@ fragment float4 fs_main(VertexOut in [[stage_in]],
     // Add iridescence
     glassColor = mix(glassColor, iridescentColor, iridescenceAmount * fresnelEffect * 0.3);
 
+    // === ADVANCED LIGHTING EFFECTS ===
+
+    // Caustics for liquid glass light patterns
+    float causticPattern = caustics(distortedUV, u.time);
+    glassColor += causticPattern * float3(1.0, 0.95, 0.8) * 0.4 * (1.0 - dist);
+
+    // Volumetric light scattering through glass
+    float3 volumetric = volumetricScatter(uv, float2(u.sunPos.x, 1.0 - u.sunPos.y), u.time, u.aspect);
+    glassColor += volumetric * u.intensity * 0.6;
+
+    // Light sparkles/particles
+    float sparkleAmount = sparkles(uv, u.time);
+    glassColor += sparkleAmount * float3(1.0, 1.0, 0.9) * u.intensity * 0.8;
+
     // Apply brightness
     float3 col = glassColor * brightness;
 
     // Enhanced alpha with fresnel for glass edges
-    float alpha = clamp(brightness * (1.0 + fresnelEffect * 0.3), 0.0, 1.0);
+    float alpha = clamp(brightness * (1.0 + fresnelEffect * 0.3) + sparkleAmount * 0.2, 0.0, 1.0);
 
     return float4(col, alpha);
 }
