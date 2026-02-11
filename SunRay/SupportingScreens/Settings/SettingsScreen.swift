@@ -13,7 +13,7 @@ struct SettingsScreen: View {
                             Text(type.displayName).tag(type)
                         }
                     }
-                    Stepper("Default SPF \(appState.settings.defaultSPF)", value: $appState.settings.defaultSPF, in: 0...100)
+                    Stepper("Default SPF \(appState.settings.defaultSPF)", value: $appState.settings.defaultSPF, in: 1...100)
                     HStack {
                         Text("Default Exposed Skin")
                         Spacer()
