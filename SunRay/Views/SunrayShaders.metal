@@ -28,6 +28,9 @@ struct Uniforms {
     float beamWidth;
     float beamCount;
     float3 color;
+    float glassiness;      // Liquid glass effect strength
+    float refraction;      // Refraction intensity
+    float iridescence;     // Iridescent color shifting
 };
 
 // Simple hash for noise
@@ -54,27 +57,70 @@ float noise(float2 p) {
 float fbm(float2 p) {
     float value = 0.0;
     float amplitude = 0.5;
-    
+
     for (int i = 0; i < 5; i++) {
         value += amplitude * noise(p);
         p *= 2.0;
         amplitude *= 0.5;
     }
-    
+
     return value;
+}
+
+// Liquid glass distortion
+float2 liquidDistortion(float2 uv, float time) {
+    float2 distortion = float2(
+        sin(uv.y * 10.0 + time * 0.5) * cos(uv.x * 8.0 + time * 0.3),
+        cos(uv.x * 12.0 + time * 0.4) * sin(uv.y * 9.0 + time * 0.6)
+    );
+    return distortion * 0.015;
+}
+
+// Fresnel effect for glass-like edges
+float fresnel(float3 viewDir, float3 normal, float power) {
+    return pow(1.0 - abs(dot(viewDir, normal)), power);
+}
+
+// Iridescent color shift based on angle and position
+float3 iridescence(float2 uv, float angle, float time) {
+    float shift = sin(angle * 3.0 + time * 0.5) * 0.5 + 0.5;
+    float3 color1 = float3(1.0, 0.7, 0.3);  // Warm orange
+    float3 color2 = float3(1.0, 0.9, 0.5);  // Golden yellow
+    float3 color3 = float3(1.0, 0.5, 0.7);  // Pink tint
+
+    float phase = fract(shift + uv.x * 0.3 + uv.y * 0.2);
+    if (phase < 0.33) {
+        return mix(color1, color2, phase * 3.0);
+    } else if (phase < 0.66) {
+        return mix(color2, color3, (phase - 0.33) * 3.0);
+    } else {
+        return mix(color3, color1, (phase - 0.66) * 3.0);
+    }
+}
+
+// Chromatic aberration for glass refraction
+float3 chromaticAberration(float2 uv, float2 direction, float strength) {
+    float r = exp(-length(uv + direction * strength * 0.02) * 1.5);
+    float g = exp(-length(uv + direction * strength * 0.01) * 1.5);
+    float b = exp(-length(uv - direction * strength * 0.01) * 1.5);
+    return float3(r, g, b);
 }
 
 fragment float4 fs_main(VertexOut in [[stage_in]],
                         constant Uniforms& u [[buffer(0)]]) {
     float2 uv = in.uv;
-    
+
+    // Apply liquid glass distortion
+    float glassiness = 0.8; // Default glassiness value
+    float2 distortedUV = uv + liquidDistortion(uv, u.time) * glassiness;
+
     // Sun position (flip y to treat top as 0)
     float2 sunPos = float2(u.sunPos.x, 1.0 - u.sunPos.y);
-    
-    // Vector from sun to current pixel
-    float2 delta = uv - sunPos;
+
+    // Vector from sun to current pixel (use distorted UV for liquid effect)
+    float2 delta = distortedUV - sunPos;
     delta.x *= u.aspect; // Aspect correction
-    
+
     float dist = length(delta);
     float angle = atan2(delta.y, delta.x);
     
@@ -184,12 +230,37 @@ fragment float4 fs_main(VertexOut in [[stage_in]],
     
     // Combine with core glow
     float brightness = (finalRays + coreGlow * 0.6) * u.intensity;
-    
-    // Add color variation with distance
-    float3 finalColor = mix(u.color, u.color * float3(1.0, 0.92, 0.75), dist * 0.4);
-    
-    float3 col = finalColor * brightness;
-    float alpha = clamp(brightness, 0.0, 1.0);
-    
+
+    // === LIQUID GLASS EFFECTS ===
+
+    // Chromatic aberration for glass refraction
+    float2 refractionDir = normalize(delta);
+    float refractionStrength = 0.5; // Default refraction
+    float3 chromaticColor = chromaticAberration(float2(dist, angle), refractionDir, refractionStrength);
+
+    // Iridescent color shifting
+    float iridescenceAmount = 0.7; // Default iridescence
+    float3 iridescentColor = iridescence(uv, angle, u.time);
+
+    // Fresnel effect for glass-like edges
+    float3 viewDir = normalize(float3(delta, 1.0));
+    float3 normal = normalize(float3(sin(angle), cos(angle), 0.5));
+    float fresnelEffect = fresnel(viewDir, normal, 3.0);
+
+    // Base color with distance variation
+    float3 baseColor = mix(u.color, u.color * float3(1.0, 0.92, 0.75), dist * 0.4);
+
+    // Blend chromatic aberration with base color
+    float3 glassColor = mix(baseColor, chromaticColor * baseColor, glassiness * 0.6);
+
+    // Add iridescence
+    glassColor = mix(glassColor, iridescentColor, iridescenceAmount * fresnelEffect * 0.3);
+
+    // Apply brightness
+    float3 col = glassColor * brightness;
+
+    // Enhanced alpha with fresnel for glass edges
+    float alpha = clamp(brightness * (1.0 + fresnelEffect * 0.3), 0.0, 1.0);
+
     return float4(col, alpha);
 }
