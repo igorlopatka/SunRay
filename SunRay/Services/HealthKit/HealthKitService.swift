@@ -15,20 +15,16 @@ final class HealthKitService: HealthKitProviding {
         HKObjectType.quantityType(forIdentifier: .uvExposure)
     }
 
-    private var dietaryVitaminDType: HKQuantityType? {
-        HKObjectType.quantityType(forIdentifier: .dietaryVitaminD)
-    }
-
     func requestAuthorization() async throws -> Bool {
         guard HKHealthStore.isHealthDataAvailable() else { return false }
 
-        guard let uv = uvExposureType, let dietary = dietaryVitaminDType else {
+        guard let uv = uvExposureType else {
             SRLog("HealthKitService: required quantity types unavailable", level: .error)
             return false
         }
 
         let toShare: Set<HKSampleType> = [uv]
-        let toRead: Set<HKObjectType> = [dietary]
+        let toRead: Set<HKObjectType> = []
 
         return try await withCheckedThrowingContinuation { continuation in
             store.requestAuthorization(toShare: toShare, read: toRead) { success, error in
@@ -78,32 +74,6 @@ final class HealthKitService: HealthKitProviding {
                     continuation.resume(returning: ())
                 }
             }
-        }
-    }
-
-    func readTodayDietaryVitaminD() async throws -> Double {
-        guard let dietary = dietaryVitaminDType else { throw HealthKitError.unavailableType }
-
-        let calendar = Calendar.current
-        let now = Date()
-        let startOfDay = calendar.startOfDay(for: now)
-        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
-
-        return try await withCheckedThrowingContinuation { continuation in
-            let query = HKStatisticsQuery(
-                quantityType: dietary,
-                quantitySamplePredicate: predicate,
-                options: .cumulativeSum
-            ) { _, stats, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                let unit = HKUnit.internationalUnit()
-                let total = stats?.sumQuantity()?.doubleValue(for: unit) ?? 0
-                continuation.resume(returning: total)
-            }
-            store.execute(query)
         }
     }
 }

@@ -124,7 +124,7 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
             oneShotLocationContinuation = nil
             cont.resume(throwing: error)
         }
-        // For MVP, we keep this silent; you may publish an alert if desired.
+        SRLog("LocationService: didFailWithError: \(error)", level: .error)
     }
 
     // MARK: - Helpers
