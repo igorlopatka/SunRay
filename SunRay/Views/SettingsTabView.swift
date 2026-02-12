@@ -22,6 +22,9 @@ struct SettingsTabView: View {
             }
             .background(.clear)
             .navigationTitle("Settings")
+            .onChange(of: appState.settings) {
+                Task { await appState.saveSettings() }
+            }
         }
     }
 
@@ -38,12 +41,9 @@ struct SettingsTabView: View {
                             .font(.body)
                         Spacer()
                         Picker("Skin Type", selection: $appState.settings.skinType) {
-                            Text("I").tag(1)
-                            Text("II").tag(2)
-                            Text("III").tag(3)
-                            Text("IV").tag(4)
-                            Text("V").tag(5)
-                            Text("VI").tag(6)
+                            ForEach(FitzpatrickSkinType.allCases) { type in
+                                Text(type.rawValue).tag(type)
+                            }
                         }
                         .pickerStyle(.menu)
                     }
@@ -68,7 +68,7 @@ struct SettingsTabView: View {
                         Slider(value: Binding(
                             get: { Double(appState.settings.defaultSPF) },
                             set: { appState.settings.defaultSPF = Int($0) }
-                        ), in: 0...50, step: 5)
+                        ), in: 1...50, step: 1)
                         .tint(.blue)
                     }
 

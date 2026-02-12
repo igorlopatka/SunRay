@@ -104,7 +104,7 @@ struct HistoryTabView: View {
                         Text("Vitamin D")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("\(Int(session.estimatedIU)) IU")
+                        Text("\(Int(session.estimatedIU ?? 0)) IU")
                             .font(.body.bold().monospacedDigit())
                     }
 

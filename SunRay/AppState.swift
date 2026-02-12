@@ -145,6 +145,7 @@ final class AppState: ObservableObject {
         do {
             healthKitAuthorized = try await hkService.requestAuthorization()
         } catch {
+            SRLog("AppState: HealthKit authorization failed: \(error)", level: .error)
             healthKitAuthorized = false
         }
 

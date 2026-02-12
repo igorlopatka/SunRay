@@ -86,9 +86,6 @@ struct ContentView: View {
                 HistoryScreen()
                     .environmentObject(appState)
             }
-            .task {
-                await appState.bootstrap()
-            }
             .refreshable {
                 await appState.refreshEnvironmentalData()
             }
