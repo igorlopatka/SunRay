@@ -22,6 +22,9 @@ struct SettingsTabView: View {
             }
             .background(.clear)
             .navigationTitle("Settings")
+            .onChange(of: appState.settings) {
+                Task { await appState.saveSettings() }
+            }
         }
     }
 
@@ -38,12 +41,9 @@ struct SettingsTabView: View {
                             .font(.body)
                         Spacer()
                         Picker("Skin Type", selection: $appState.settings.skinType) {
-                            Text("I").tag(1)
-                            Text("II").tag(2)
-                            Text("III").tag(3)
-                            Text("IV").tag(4)
-                            Text("V").tag(5)
-                            Text("VI").tag(6)
+                            ForEach(FitzpatrickSkinType.allCases) { type in
+                                Text(type.rawValue).tag(type)
+                            }
                         }
                         .pickerStyle(.menu)
                     }
@@ -59,7 +59,7 @@ struct SettingsTabView: View {
                                 .font(.body.bold().monospacedDigit())
                                 .foregroundStyle(
                                     .linearGradient(
-                                        colors: [.purple, .pink],
+                                        colors: [.blue, .cyan],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
@@ -68,8 +68,8 @@ struct SettingsTabView: View {
                         Slider(value: Binding(
                             get: { Double(appState.settings.defaultSPF) },
                             set: { appState.settings.defaultSPF = Int($0) }
-                        ), in: 0...50, step: 5)
-                        .tint(.purple)
+                        ), in: 1...50, step: 1)
+                        .tint(.blue)
                     }
 
                     Divider()
@@ -83,14 +83,14 @@ struct SettingsTabView: View {
                                 .font(.body.bold().monospacedDigit())
                                 .foregroundStyle(
                                     .linearGradient(
-                                        colors: [.purple, .pink],
+                                        colors: [.blue, .cyan],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
                                 )
                         }
                         Slider(value: $appState.settings.defaultExposedPercent, in: 5...100, step: 5)
-                            .tint(.purple)
+                            .tint(.blue)
                     }
                 }
             }
@@ -113,14 +113,14 @@ struct SettingsTabView: View {
                             .font(.body.bold().monospacedDigit())
                             .foregroundStyle(
                                 .linearGradient(
-                                    colors: [.purple, .pink],
+                                    colors: [.blue, .cyan],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                     }
                     Slider(value: $appState.settings.dailyGoalIU, in: 200...2000, step: 100)
-                        .tint(.purple)
+                        .tint(.blue)
 
                     Text("Recommended: 600-800 IU for most adults")
                         .font(.caption)
@@ -143,7 +143,7 @@ struct SettingsTabView: View {
                             .font(.system(size: 32))
                             .foregroundStyle(
                                 .linearGradient(
-                                    colors: [.purple, .pink],
+                                    colors: [.blue, .cyan],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )

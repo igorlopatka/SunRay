@@ -49,7 +49,7 @@ struct HistoryTabView: View {
                     .font(.system(size: 64))
                     .foregroundStyle(
                         .linearGradient(
-                            colors: [.orange, .yellow],
+                            colors: [.yellow, .white],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -104,7 +104,7 @@ struct HistoryTabView: View {
                         Text("Vitamin D")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("\(Int(session.estimatedIU)) IU")
+                        Text("\(Int(session.estimatedIU ?? 0)) IU")
                             .font(.body.bold().monospacedDigit())
                     }
 

@@ -17,7 +17,7 @@ struct UVService {
     if #available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *) {
         let weather = try await WeatherService.shared.weather(for: location)
         let uvValue = Double(weather.currentWeather.uvIndex.value)
-        let cloud = weather.currentWeather.cloudCover ?? 0.3
+        let cloud = max(0, min(1, weather.currentWeather.cloudCover ?? 0.3))
         return (uvValue, cloud)
     } else {
         // Fallback stub for older OS versions: simple diurnal estimate

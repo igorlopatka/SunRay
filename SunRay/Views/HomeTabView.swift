@@ -70,7 +70,7 @@ struct HomeTabView: View {
                     .font(.title2.bold())
                     .foregroundStyle(
                         .linearGradient(
-                            colors: [.orange, .yellow],
+                            colors: [.yellow, .white],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -161,7 +161,7 @@ struct HomeTabView: View {
                             Capsule()
                                 .fill(
                                     .linearGradient(
-                                        colors: [.orange, .yellow],
+                                        colors: [.yellow, .white],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
@@ -170,7 +170,7 @@ struct HomeTabView: View {
                                     width: geo.size.width * min(appState.todaySynthesizedIU / appState.settings.dailyGoalIU, 1.0),
                                     height: 12
                                 )
-                                .shadow(color: .orange.opacity(0.6), radius: 6, x: 0, y: 3)
+                                .shadow(color: .yellow.opacity(0.6), radius: 6, x: 0, y: 3)
                                 .shimmer(duration: 2.5, bounce: true)
                         }
                     }
@@ -180,7 +180,7 @@ struct HomeTabView: View {
                 if let recommendation = appState.exposureRecommendation {
                     HStack(spacing: 8) {
                         Image(systemName: "sun.min.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.yellow)
                         Text("Recommended: \(recommendation.durationMinutes) min \(recommendation.windowText)")
                             .font(.footnote)
                         Spacer()
@@ -260,7 +260,7 @@ struct HomeTabView: View {
                                 .font(.headline)
                         }
                         .buttonStyle(.bordered)
-                        .tint(.orange)
+                        .tint(.yellow)
                         .controlSize(.large)
                     } else {
                         Button {
@@ -271,7 +271,7 @@ struct HomeTabView: View {
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.orange)
+                        .tint(.yellow)
                         .controlSize(.large)
                         .shimmer(duration: 4.0)
                     }
@@ -289,7 +289,7 @@ struct HomeTabView: View {
             if !appState.healthKitAuthorized {
                 Label("Health permissions needed to save UV exposure.", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.yellow)
             }
         }
         .padding()

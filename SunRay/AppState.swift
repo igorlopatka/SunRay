@@ -33,6 +33,10 @@ final class AppState: ObservableObject {
     // Daily synthesis accumulation (in-app only)
     @Published var todaySynthesizedIU: Double = 0
 
+    // UV snapshot captured when a session starts
+    private var sessionStartUV: Double?
+    private var sessionStartCloudCover: Double?
+
     var isSessionActive: Bool { activeSession != nil }
 
     var allSessions: [ExposureSession] { history }
@@ -66,9 +70,8 @@ final class AppState: ObservableObject {
         switch uv {
         case ..<3: return .green
         case 3..<6: return .yellow
-        case 6..<8: return .orange
-        case 8..<11: return .red
-        default: return .purple
+        case 6..<11: return .red
+        default: return .red
         }
     }
 
@@ -146,6 +149,7 @@ final class AppState: ObservableObject {
         do {
             healthKitAuthorized = try await hkService.requestAuthorization()
         } catch {
+            SRLog("AppState: HealthKit authorization failed: \(error)", level: .error)
             healthKitAuthorized = false
         }
 
@@ -184,6 +188,8 @@ final class AppState: ObservableObject {
 
     func startSession(spf: Int, exposedPercent: Double) {
         guard activeSession == nil else { return }
+        sessionStartUV = currentUVIndex
+        sessionStartCloudCover = cloudCover
         let session = ExposureSession(start: Date(), end: nil, spf: spf, exposedSkinPercent: exposedPercent, skinType: settings.skinType)
         activeSession = session
     }
@@ -199,7 +205,8 @@ final class AppState: ObservableObject {
         guard var session = activeSession else { return }
         session.end = Date()
 
-        let (uv, cc) = (currentUVIndex ?? 0, cloudCover ?? 0)
+        let uv = sessionStartUV ?? currentUVIndex ?? 0
+        let cc = sessionStartCloudCover ?? cloudCover ?? 0
         let minutes = max(0, session.durationMinutes)
         let iu = VitaminDModel.estimateSynthesizedIU(
             uvIndex: uv,
@@ -228,6 +235,8 @@ final class AppState: ObservableObject {
         }
 
         activeSession = nil
+        sessionStartUV = nil
+        sessionStartCloudCover = nil
     }
 
     func deleteSession(_ session: ExposureSession) {

@@ -117,37 +117,47 @@ struct GlassCard<Content: View>: View {
 
 struct FloatingParticles: View {
     @State private var particles: [Particle] = []
+    @State private var startTime: Date = .now
 
     struct Particle: Identifiable {
         let id = UUID()
         var x: CGFloat
-        var y: CGFloat
+        var initialY: CGFloat
         var size: CGFloat
         var opacity: Double
         var speed: Double
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                ForEach(particles) { particle in
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [.white.opacity(particle.opacity), .clear],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: particle.size / 2
-                            )
+        TimelineView(.animation) { timeline in
+            let elapsed = timeline.date.timeIntervalSince(startTime)
+
+            GeometryReader { geometry in
+                Canvas { context, size in
+                    for particle in particles {
+                        let totalTravel = size.height + 40
+                        let offset = (particle.speed * elapsed).truncatingRemainder(dividingBy: totalTravel)
+                        var y = particle.initialY - offset
+                        if y < -20 {
+                            y += totalTravel
+                        }
+
+                        let rect = CGRect(
+                            x: particle.x - particle.size / 2,
+                            y: y - particle.size / 2,
+                            width: particle.size,
+                            height: particle.size
                         )
-                        .frame(width: particle.size, height: particle.size)
-                        .position(x: particle.x, y: particle.y)
-                        .blur(radius: 2)
+                        context.opacity = particle.opacity
+                        context.addFilter(.blur(radius: 2))
+                        context.fill(Circle().path(in: rect), with: .color(.white))
+                    }
                 }
-            }
-            .onAppear {
-                createParticles(in: geometry.size)
-                startAnimation()
+                .onAppear {
+                    if particles.isEmpty {
+                        createParticles(in: geometry.size)
+                    }
+                }
             }
         }
         .allowsHitTesting(false)
@@ -157,24 +167,11 @@ struct FloatingParticles: View {
         particles = (0..<15).map { _ in
             Particle(
                 x: CGFloat.random(in: 0...size.width),
-                y: CGFloat.random(in: 0...size.height),
+                initialY: CGFloat.random(in: 0...size.height),
                 size: CGFloat.random(in: 3...8),
                 opacity: Double.random(in: 0.1...0.4),
                 speed: Double.random(in: 20...40)
             )
-        }
-    }
-
-    private func startAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
-            for i in particles.indices {
-                particles[i].y -= particles[i].speed * 0.05
-
-                if particles[i].y < -20 {
-                    particles[i].y = UIScreen.main.bounds.height + 20
-                    particles[i].x = CGFloat.random(in: 0...UIScreen.main.bounds.width)
-                }
-            }
         }
     }
 }
