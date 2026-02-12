@@ -24,7 +24,7 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
 
     var sunPosition: CGPoint = CGPoint(x: 0.85, y: 0.15)
     var intensity: Float = 1.0
-    var color: SIMD3<Float> = SIMD3(1.0, 0.85, 0.6)
+    var color: SIMD3<Float> = SIMD3(1.0, 0.95, 0.75)
 
     init?(mtkView: MTKView) {
         guard let device = mtkView.device else { return nil }

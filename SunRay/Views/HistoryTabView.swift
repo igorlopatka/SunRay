@@ -49,7 +49,7 @@ struct HistoryTabView: View {
                     .font(.system(size: 64))
                     .foregroundStyle(
                         .linearGradient(
-                            colors: [.orange, .yellow],
+                            colors: [.yellow, .white],
                             startPoint: .top,
                             endPoint: .bottom
                         )

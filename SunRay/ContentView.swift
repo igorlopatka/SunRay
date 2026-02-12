@@ -246,7 +246,7 @@ struct ContentView: View {
             if !appState.healthKitAuthorized {
                 Label("Health permissions needed to save UV exposure.", systemImage: "exclamationmark.triangle")
                     .font(.footnote)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.yellow)
             }
         }
     }

@@ -47,7 +47,7 @@ struct MainTabView: View {
                     }
                     .tag(2)
             }
-            .tint(.orange)
+            .tint(.yellow)
         }
         .task {
             await appState.bootstrap()
@@ -66,9 +66,9 @@ struct MainTabView: View {
         switch selectedTab {
         case 0:
             return [
-                .orange.opacity(0.15), .yellow.opacity(0.08), .orange.opacity(0.12),
-                .yellow.opacity(0.08), .clear, .yellow.opacity(0.08),
-                .orange.opacity(0.12), .yellow.opacity(0.08), .orange.opacity(0.15)
+                .yellow.opacity(0.12), .yellow.opacity(0.06), .yellow.opacity(0.10),
+                .yellow.opacity(0.06), .clear, .yellow.opacity(0.06),
+                .yellow.opacity(0.10), .yellow.opacity(0.06), .yellow.opacity(0.12)
             ]
         case 1:
             return [
@@ -78,9 +78,9 @@ struct MainTabView: View {
             ]
         case 2:
             return [
-                .purple.opacity(0.15), .pink.opacity(0.08), .purple.opacity(0.12),
-                .pink.opacity(0.08), .clear, .pink.opacity(0.08),
-                .purple.opacity(0.12), .pink.opacity(0.08), .purple.opacity(0.15)
+                .blue.opacity(0.12), .cyan.opacity(0.06), .blue.opacity(0.10),
+                .cyan.opacity(0.06), .clear, .cyan.opacity(0.06),
+                .blue.opacity(0.10), .cyan.opacity(0.06), .blue.opacity(0.12)
             ]
         default:
             return [.clear, .clear, .clear, .clear, .clear, .clear, .clear, .clear, .clear]

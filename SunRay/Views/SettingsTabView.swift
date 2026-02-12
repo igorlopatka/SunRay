@@ -59,7 +59,7 @@ struct SettingsTabView: View {
                                 .font(.body.bold().monospacedDigit())
                                 .foregroundStyle(
                                     .linearGradient(
-                                        colors: [.purple, .pink],
+                                        colors: [.blue, .cyan],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
@@ -69,7 +69,7 @@ struct SettingsTabView: View {
                             get: { Double(appState.settings.defaultSPF) },
                             set: { appState.settings.defaultSPF = Int($0) }
                         ), in: 0...50, step: 5)
-                        .tint(.purple)
+                        .tint(.blue)
                     }
 
                     Divider()
@@ -83,14 +83,14 @@ struct SettingsTabView: View {
                                 .font(.body.bold().monospacedDigit())
                                 .foregroundStyle(
                                     .linearGradient(
-                                        colors: [.purple, .pink],
+                                        colors: [.blue, .cyan],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
                                 )
                         }
                         Slider(value: $appState.settings.defaultExposedPercent, in: 5...100, step: 5)
-                            .tint(.purple)
+                            .tint(.blue)
                     }
                 }
             }
@@ -113,14 +113,14 @@ struct SettingsTabView: View {
                             .font(.body.bold().monospacedDigit())
                             .foregroundStyle(
                                 .linearGradient(
-                                    colors: [.purple, .pink],
+                                    colors: [.blue, .cyan],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                     }
                     Slider(value: $appState.settings.dailyGoalIU, in: 200...2000, step: 100)
-                        .tint(.purple)
+                        .tint(.blue)
 
                     Text("Recommended: 600-800 IU for most adults")
                         .font(.caption)
@@ -143,7 +143,7 @@ struct SettingsTabView: View {
                             .font(.system(size: 32))
                             .foregroundStyle(
                                 .linearGradient(
-                                    colors: [.purple, .pink],
+                                    colors: [.blue, .cyan],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )

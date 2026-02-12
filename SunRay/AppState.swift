@@ -66,9 +66,8 @@ final class AppState: ObservableObject {
         switch uv {
         case ..<3: return .green
         case 3..<6: return .yellow
-        case 6..<8: return .orange
-        case 8..<11: return .red
-        default: return .purple
+        case 6..<11: return .red
+        default: return .red
         }
     }
 

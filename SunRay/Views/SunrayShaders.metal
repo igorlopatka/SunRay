@@ -84,9 +84,9 @@ float fresnel(float3 viewDir, float3 normal, float power) {
 // Iridescent color shift based on angle and position
 float3 iridescence(float2 uv, float angle, float time) {
     float shift = sin(angle * 3.0 + time * 0.5) * 0.5 + 0.5;
-    float3 color1 = float3(1.0, 0.7, 0.3);  // Warm orange
-    float3 color2 = float3(1.0, 0.9, 0.5);  // Golden yellow
-    float3 color3 = float3(1.0, 0.5, 0.7);  // Pink tint
+    float3 color1 = float3(1.0, 0.95, 0.7);  // Warm gold
+    float3 color2 = float3(1.0, 0.98, 0.85); // Light gold
+    float3 color3 = float3(1.0, 1.0, 0.92);  // Warm white
 
     float phase = fract(shift + uv.x * 0.3 + uv.y * 0.2);
     if (phase < 0.33) {
