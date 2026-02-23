@@ -214,7 +214,8 @@ final class AppState: ObservableObject {
             cloudCover: cc,
             skinType: session.skinType,
             spf: session.spf,
-            exposedPercent: session.exposedSkinPercent
+            exposedPercent: session.exposedSkinPercent,
+            age: settings.age
         )
         session.estimatedIU = iu
 
@@ -223,6 +224,12 @@ final class AppState: ObservableObject {
             try await hkService.saveUVExposure(durationMinutes: minutes, uvIndex: uv, location: locationService.location)
         } catch {
             SRLog("AppState: HealthKit saveUVExposure failed: \(error)", level: .error)
+        }
+
+        do {
+            try await hkService.saveVitaminD(estimatedIU: iu, start: session.start, end: session.end ?? Date())
+        } catch {
+            SRLog("AppState: HealthKit saveVitaminD failed: \(error)", level: .error)
         }
 
         todaySynthesizedIU += iu

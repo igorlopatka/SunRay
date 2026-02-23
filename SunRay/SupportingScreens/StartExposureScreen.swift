@@ -37,7 +37,8 @@ struct StartExposureScreen: View {
                         cloudCover: appState.cloudCover ?? 0,
                         skinType: appState.settings.skinType,
                         spf: spf,
-                        exposedPercent: exposedPercent
+                        exposedPercent: exposedPercent,
+                        age: appState.settings.age
                     )
                     Section("Estimate") {
                         Text("~\(Int(iuPer30)) IU in 30 min under current conditions.")

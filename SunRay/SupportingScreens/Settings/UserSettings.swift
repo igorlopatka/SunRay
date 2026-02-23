@@ -35,6 +35,7 @@ enum FitzpatrickSkinType: String, CaseIterable, Codable, Identifiable {
 
 struct UserSettings: Codable, Equatable {
     var skinType: FitzpatrickSkinType = .III
+    var age: Int = 30
     var defaultSPF: Int = 15
     var defaultExposedPercent: Double = 25 // %
     var dailyGoalIU: Double = 800 // IU

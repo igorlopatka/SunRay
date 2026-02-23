@@ -50,6 +50,16 @@ struct SettingsTabView: View {
 
                     Divider()
 
+                    HStack {
+                        Text("Age")
+                            .font(.body)
+                        Spacer()
+                        Stepper("\(appState.settings.age) yrs", value: $appState.settings.age, in: 1...120)
+                            .fixedSize()
+                    }
+
+                    Divider()
+
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Default SPF")

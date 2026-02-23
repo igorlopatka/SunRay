@@ -30,6 +30,28 @@ final class VitaminDModelTests: XCTestCase {
         XCTAssertEqual(iu, 0)
     }
 
+    // MARK: - UV saturation curve
+
+    func testUVSaturationFactorAtUV2IsOne() {
+        // At UV=2: (2*3)/(4+2) = 6/6 = 1.0
+        XCTAssertEqual(VitaminDModel.uvSaturationFactor(2), 1.0, accuracy: 0.001)
+    }
+
+    func testUVSaturationFactorApproachesAsymptote() {
+        // Factor approaches 3.0 but never reaches it
+        XCTAssertLessThan(VitaminDModel.uvSaturationFactor(100), 3.0)
+        XCTAssertGreaterThan(VitaminDModel.uvSaturationFactor(100), 2.9)
+    }
+
+    func testHigherUVProducesMoreSynthesisNonLinearly() {
+        let iuUV3 = VitaminDModel.estimateSynthesizedIU(uvIndex: 3, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25)
+        let iuUV6 = VitaminDModel.estimateSynthesizedIU(uvIndex: 6, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25)
+        // Higher UV produces more vitamin D...
+        XCTAssertGreaterThan(iuUV6, iuUV3)
+        // ...but saturation curve means it's less than 2× (diminishing returns)
+        XCTAssertLessThan(iuUV6, iuUV3 * 2, "Saturation curve: doubling UV should not double output")
+    }
+
     // MARK: - Cloud cover
 
     func testHighCloudReducesSynthesis() {
@@ -86,18 +108,34 @@ final class VitaminDModelTests: XCTestCase {
         }
     }
 
+    // MARK: - Age factor
+
+    func testAgeFactorPeakAtOrBelowTwenty() {
+        XCTAssertEqual(VitaminDModel.ageFactor(for: 20), 1.0, accuracy: 0.001)
+        XCTAssertEqual(VitaminDModel.ageFactor(for: 10), 1.0, accuracy: 0.001)
+    }
+
+    func testAgeFactorDeclinesWithAge() {
+        XCTAssertLessThan(VitaminDModel.ageFactor(for: 50), VitaminDModel.ageFactor(for: 30))
+    }
+
+    func testAgeFactorFloorAtSeventy() {
+        XCTAssertEqual(VitaminDModel.ageFactor(for: 70), 0.25, accuracy: 0.01)
+        XCTAssertEqual(VitaminDModel.ageFactor(for: 90), 0.25, accuracy: 0.01)
+    }
+
+    func testOlderAgeReducesSynthesis() {
+        let iuYoung = VitaminDModel.estimateSynthesizedIU(uvIndex: 5, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25, age: 20)
+        let iuOld = VitaminDModel.estimateSynthesizedIU(uvIndex: 5, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25, age: 70)
+        XCTAssertLessThan(iuOld, iuYoung)
+    }
+
     // MARK: - Linearity
 
     func testSynthesisScalesLinearlyWithMinutes() {
         let iu15 = VitaminDModel.estimateSynthesizedIU(uvIndex: 5, minutes: 15, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25)
         let iu30 = VitaminDModel.estimateSynthesizedIU(uvIndex: 5, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25)
         XCTAssertEqual(iu30, iu15 * 2, accuracy: 0.001)
-    }
-
-    func testSynthesisScalesLinearlyWithUV() {
-        let iuUV3 = VitaminDModel.estimateSynthesizedIU(uvIndex: 3, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25)
-        let iuUV6 = VitaminDModel.estimateSynthesizedIU(uvIndex: 6, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25)
-        XCTAssertEqual(iuUV6, iuUV3 * 2, accuracy: 0.001)
     }
 
     // MARK: - Exposed area
@@ -129,9 +167,10 @@ final class VitaminDModelTests: XCTestCase {
     // MARK: - Sanity check: realistic scenario
 
     func testRealisticScenarioProducesReasonableIU() {
-        // Type III skin, SPF 1, 25% exposed, UV 5, clear sky, 30 min
-        // Expected: 20 * 5 * 1.0 * 1.0 * 0.75 * 0.25 * 30 = 562.5 IU
-        let iu = VitaminDModel.estimateSynthesizedIU(uvIndex: 5, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25)
+        // Type III skin, SPF 1, 25% exposed, UV 5, clear sky, age 20 (factor 1.0), 30 min.
+        // base(60) × uvFactor(15/9 ≈ 1.667) × spf(1.0) × cloud(1.0) × skin(0.75) × area(0.25) × age(1.0) × 30
+        // = 60 × 1.667 × 0.75 × 0.25 × 30 = 562.5 IU
+        let iu = VitaminDModel.estimateSynthesizedIU(uvIndex: 5, minutes: 30, cloudCover: 0, skinType: .III, spf: 1, exposedPercent: 25, age: 20)
         XCTAssertEqual(iu, 562.5, accuracy: 0.1)
     }
 }
