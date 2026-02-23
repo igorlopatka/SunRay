@@ -16,7 +16,7 @@ struct StartExposureScreen: View {
         NavigationStack {
             Form {
                 Section("Session Settings") {
-                    Stepper("SPF \(spf)", value: $spf, in: 1...100)
+                    Stepper("SPF \(spf)", value: $spf, in: 1...50)
                     HStack {
                         Text("Exposed Skin")
                         Spacer()

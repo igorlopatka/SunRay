@@ -66,7 +66,7 @@ struct HomeTabView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Hello, \(appState.displayName)")
+                Text(appState.greeting)
                     .font(.title2.bold())
                     .foregroundStyle(
                         .linearGradient(
@@ -127,6 +127,11 @@ struct HomeTabView: View {
                         Label("\(appState.cloudCoverString) clouds", systemImage: "cloud.fill")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        if let burnTime = appState.burnTimeString {
+                            Label("Burn in ~\(burnTime)", systemImage: "flame.fill")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
                     }
 
                     Spacer()
@@ -234,6 +239,20 @@ struct HomeTabView: View {
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                    // Live elapsed time and accumulated IU — refreshes every 30 seconds.
+                    TimelineView(.periodic(from: session.start, by: 30)) { _ in
+                        let elapsed = Int(Date().timeIntervalSince(session.start) / 60)
+                        let liveIU = Int(appState.liveSessionIU)
+                        HStack(spacing: 8) {
+                            Label("\(elapsed) min elapsed", systemImage: "timer")
+                            Spacer()
+                            Text("~\(liveIU) IU so far")
+                                .fontWeight(.semibold)
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                    }
                 } else {
                     Text("Track a session to estimate synthesized Vitamin D from sun exposure.")
                         .font(.footnote)
@@ -287,7 +306,7 @@ struct HomeTabView: View {
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
             if !appState.healthKitAuthorized {
-                Label("Health permissions needed to save UV exposure.", systemImage: "exclamationmark.triangle.fill")
+                Label("Health permissions needed to save UV and vitamin D data.", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
                     .foregroundStyle(.yellow)
             }

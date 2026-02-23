@@ -41,7 +41,14 @@ final class AppState: ObservableObject {
 
     var allSessions: [ExposureSession] { history }
 
-    var displayName: String { "SunRay" }
+    var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        default:      return "Good evening"
+        }
+    }
 
     var locationSummary: String {
         switch locationService.authorizationStatus {
@@ -68,10 +75,11 @@ final class AppState: ObservableObject {
     var uvColor: Color {
         guard let uv = currentUVIndex else { return .secondary }
         switch uv {
-        case ..<3: return .green
+        case ..<3:  return .green
         case 3..<6: return .yellow
-        case 6..<11: return .red
-        default: return .red
+        case 6..<8: return .orange
+        case 8..<11: return .red
+        default:    return .purple // Extreme (11+)
         }
     }
 
@@ -82,12 +90,34 @@ final class AppState: ObservableObject {
 
     var uvAdvisory: String {
         guard let uv = currentUVIndex else { return "—" }
-        if uv < 3 { return "Low risk. Synthesis may be limited." }
-        if uv < 6 { return "Moderate. Short exposure advised." }
-        if uv < 8 { return "High. Use protection." }
-        if uv < 11 { return "Very high. Limit exposure."
-        }
-        return "Extreme. Avoid exposure."
+        if uv < 3  { return "Low — UVB too weak for significant synthesis." }
+        if uv < 6  { return "Moderate — short exposure effective." }
+        if uv < 8  { return "High — limit exposure, apply SPF." }
+        if uv < 11 { return "Very high — minimize direct sun." }
+        return "Extreme — avoid sun exposure."
+    }
+
+    // Formatted time-to-burn based on current UV and user skin type.
+    var burnTimeString: String? {
+        guard let uv = currentUVIndex,
+              let mins = VitaminDModel.burnTimeMinutes(uvIndex: uv, skinType: settings.skinType),
+              mins.isFinite else { return nil }
+        let m = Int(mins.rounded())
+        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
+    }
+
+    // Estimated IU accumulated so far in the active session (updated by caller via timer).
+    var liveSessionIU: Double {
+        guard let session = activeSession else { return 0 }
+        let elapsed = Date().timeIntervalSince(session.start) / 60.0
+        guard elapsed > 0 else { return 0 }
+        let uv = sessionStartUV ?? currentUVIndex ?? 0
+        let cc = sessionStartCloudCover ?? cloudCover ?? 0
+        return VitaminDModel.estimateSynthesizedIU(
+            uvIndex: uv, minutes: elapsed, cloudCover: cc,
+            skinType: session.skinType, spf: session.spf,
+            exposedPercent: session.exposedSkinPercent, age: settings.age
+        )
     }
 
     struct ExposureRecommendation {

@@ -123,11 +123,22 @@ struct HistoryTabView: View {
                         .frame(height: 32)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Skin")
+                        Text("Exposed")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text("\(Int(session.exposedSkinPercent))%")
                             .font(.body.bold().monospacedDigit())
+                    }
+
+                    Divider()
+                        .frame(height: 32)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Skin Type")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(session.skinType.rawValue)
+                            .font(.body.bold())
                     }
 
                     Spacer()

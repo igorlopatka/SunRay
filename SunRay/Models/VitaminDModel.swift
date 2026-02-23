@@ -42,6 +42,24 @@ enum VitaminDModel {
         return max(0.25, 1.0 - Double(age - 20) * 0.015)
     }
 
+    // Estimated time-to-burn (sunburn threshold) at the given UV index.
+    // Based on MED (Minimal Erythema Dose) values scaled per Fitzpatrick type.
+    // Returns nil when UV is 0 (no burn risk / no synthesis).
+    // Ref: WHO UV Index fact sheet; McKinlay AF & Diffey BL. CIE Research Note. 1987.
+    static func burnTimeMinutes(uvIndex: Double, skinType: FitzpatrickSkinType) -> Double? {
+        guard uvIndex > 0 else { return nil }
+        let minutesAtUV1: Double
+        switch skinType {
+        case .I:   minutesAtUV1 = 67
+        case .II:  minutesAtUV1 = 100
+        case .III: minutesAtUV1 = 200
+        case .IV:  minutesAtUV1 = 300
+        case .V:   minutesAtUV1 = 400
+        case .VI:  minutesAtUV1 = 500
+        }
+        return minutesAtUV1 / uvIndex
+    }
+
     static func estimateSynthesizedIU(
         uvIndex: Double,
         minutes: Double,
