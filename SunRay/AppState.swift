@@ -97,13 +97,15 @@ final class AppState: ObservableObject {
         return "Extreme — avoid sun exposure."
     }
 
-    // Formatted time-to-burn based on current UV and user skin type.
+    // Estimated time-to-burn for unprotected skin at the current UV index.
+    // Does not account for SPF — multiply by SPF factor for protected estimate.
     var burnTimeString: String? {
         guard let uv = currentUVIndex,
               let mins = VitaminDModel.burnTimeMinutes(uvIndex: uv, skinType: settings.skinType),
               mins.isFinite else { return nil }
         let m = Int(mins.rounded())
-        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
+        if m >= 120 { return "\(m / 60)h \(m % 60 == 0 ? "" : "\(m % 60)m")" }
+        return "\(m) min"
     }
 
     // Estimated IU accumulated so far in the active session (updated by caller via timer).
@@ -122,19 +124,20 @@ final class AppState: ObservableObject {
 
     struct ExposureRecommendation {
         let durationMinutes: Int
-        let windowText: String
     }
 
+    // Returns a recommendation only when UV ≥ 3 (below this threshold UVB is too
+    // weak for meaningful vitamin D synthesis regardless of exposure duration).
+    // Caps at 240 min to avoid surfacing unrealistic estimates.
     var exposureRecommendation: ExposureRecommendation? {
-        guard let uv = currentUVIndex else { return nil }
+        guard let uv = currentUVIndex, uv >= 3 else { return nil }
         let minutes = VitaminDModel.recommendedMinutesToGoal(
             currentUV: uv,
             cloudCover: cloudCover ?? 0,
             settings: settings
         )
-        guard minutes > 0, minutes.isFinite else { return nil }
-        let window = (uv >= 3) ? "now" : "later today"
-        return .init(durationMinutes: Int(minutes.rounded()), windowText: window)
+        guard minutes > 0, minutes.isFinite, minutes <= 240 else { return nil }
+        return .init(durationMinutes: Int(minutes.rounded()))
     }
 
     init() {

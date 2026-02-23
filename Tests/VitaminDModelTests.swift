@@ -164,6 +164,36 @@ final class VitaminDModelTests: XCTestCase {
         XCTAssertTrue(minutesHighUV < minutesLowUV)
     }
 
+    // MARK: - Burn time
+
+    func testBurnTimeZeroUVReturnsNil() {
+        XCTAssertNil(VitaminDModel.burnTimeMinutes(uvIndex: 0, skinType: .III))
+    }
+
+    func testBurnTimeScalesInverselyWithUV() {
+        let atUV1 = VitaminDModel.burnTimeMinutes(uvIndex: 1, skinType: .I)!
+        let atUV2 = VitaminDModel.burnTimeMinutes(uvIndex: 2, skinType: .I)!
+        XCTAssertEqual(atUV2, atUV1 / 2, accuracy: 0.01, "Doubling UV should halve burn time")
+    }
+
+    func testDarkerSkinTakesLongerToBurn() {
+        let typeI = VitaminDModel.burnTimeMinutes(uvIndex: 5, skinType: .I)!
+        let typeVI = VitaminDModel.burnTimeMinutes(uvIndex: 5, skinType: .VI)!
+        XCTAssertLessThan(typeI, typeVI, "Fair skin burns faster than dark skin")
+    }
+
+    func testBurnTimeTypeIAtUV10() {
+        // Type I MED = 67 min at UV 1; at UV 10 → 6.7 min
+        let mins = VitaminDModel.burnTimeMinutes(uvIndex: 10, skinType: .I)!
+        XCTAssertEqual(mins, 6.7, accuracy: 0.01)
+    }
+
+    func testBurnTimeTypeVIAtUV1() {
+        // Type VI MED = 500 min at UV 1
+        let mins = VitaminDModel.burnTimeMinutes(uvIndex: 1, skinType: .VI)!
+        XCTAssertEqual(mins, 500, accuracy: 0.01)
+    }
+
     // MARK: - Sanity check: realistic scenario
 
     func testRealisticScenarioProducesReasonableIU() {

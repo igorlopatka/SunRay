@@ -128,7 +128,7 @@ struct HomeTabView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         if let burnTime = appState.burnTimeString {
-                            Label("Burn in ~\(burnTime)", systemImage: "flame.fill")
+                            Label("~\(burnTime) unprotected burn", systemImage: "flame.fill")
                                 .font(.caption)
                                 .foregroundStyle(.orange)
                         }
@@ -147,52 +147,64 @@ struct HomeTabView: View {
                     .font(.headline)
                     .foregroundStyle(.secondary)
 
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("\(Int(appState.todaySynthesizedIU)) IU")
-                            .font(.title2.bold().monospacedDigit())
-                        Spacer()
-                        Text("\(Int(appState.settings.dailyGoalIU)) IU")
-                            .font(.subheadline.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                // During an active session, include live accumulated IU in the bar.
+                if appState.isSessionActive {
+                    TimelineView(.periodic(from: .now, by: 30)) { _ in
+                        vitaminDBar(currentIU: appState.todaySynthesizedIU + appState.liveSessionIU)
                     }
-
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(.quaternary)
-                                .frame(height: 12)
-
-                            Capsule()
-                                .fill(
-                                    .linearGradient(
-                                        colors: [.yellow, .white],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(
-                                    width: geo.size.width * min(appState.todaySynthesizedIU / appState.settings.dailyGoalIU, 1.0),
-                                    height: 12
-                                )
-                                .shadow(color: .yellow.opacity(0.6), radius: 6, x: 0, y: 3)
-                                .shimmer(duration: 2.5, bounce: true)
-                        }
-                    }
-                    .frame(height: 12)
+                } else {
+                    vitaminDBar(currentIU: appState.todaySynthesizedIU)
                 }
 
                 if let recommendation = appState.exposureRecommendation {
                     HStack(spacing: 8) {
                         Image(systemName: "sun.min.fill")
                             .foregroundStyle(.yellow)
-                        Text("Recommended: \(recommendation.durationMinutes) min \(recommendation.windowText)")
+                        Text("~\(recommendation.durationMinutes) min recommended now")
                             .font(.footnote)
                         Spacer()
                     }
                     .foregroundStyle(.secondary)
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func vitaminDBar(currentIU: Double) -> some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("\(Int(currentIU)) IU")
+                    .font(.title2.bold().monospacedDigit())
+                Spacer()
+                Text("\(Int(appState.settings.dailyGoalIU)) IU")
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.quaternary)
+                        .frame(height: 12)
+
+                    Capsule()
+                        .fill(
+                            .linearGradient(
+                                colors: [.yellow, .white],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(
+                            width: geo.size.width * min(currentIU / appState.settings.dailyGoalIU, 1.0),
+                            height: 12
+                        )
+                        .shadow(color: .yellow.opacity(0.6), radius: 6, x: 0, y: 3)
+                        .shimmer(duration: 2.5, bounce: true)
+                }
+            }
+            .frame(height: 12)
         }
     }
 

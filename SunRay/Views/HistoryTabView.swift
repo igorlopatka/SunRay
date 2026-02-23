@@ -84,8 +84,11 @@ struct HistoryTabView: View {
                     Spacer()
 
                     if let end = session.end {
-                        let duration = end.timeIntervalSince(session.start)
-                        Text("\(Int(duration / 60)) min")
+                        let totalMin = Int(end.timeIntervalSince(session.start) / 60)
+                        let durationText = totalMin >= 60
+                            ? "\(totalMin / 60)h \(totalMin % 60 == 0 ? "" : "\(totalMin % 60)m")"
+                            : "\(totalMin) min"
+                        Text(durationText)
                             .font(.title3.bold().monospacedDigit())
                             .foregroundStyle(
                                 .linearGradient(
