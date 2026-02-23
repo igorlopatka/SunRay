@@ -90,7 +90,7 @@ enum VitaminDModel {
         let spfFactor = attenuationForSPF(settings.defaultSPF)
         let cloudFactor = cloudCoverFactor(cloudCover)
         let skinFactor = settings.skinType.synthesisFactor
-        let areaFactor = max(0, min(1, settings.defaultExposedPercent / 100.0))
+        let areaFactor = max(0, min(1, settings.defaultClothing.exposedPercent / 100.0))
         let ageF = ageFactor(for: settings.age)
         let iuPerMinute = baseIUPerMinute * uvFactor * spfFactor * cloudFactor * skinFactor * areaFactor * ageF
         guard iuPerMinute > 0 else { return .infinity }

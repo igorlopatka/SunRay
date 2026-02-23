@@ -116,7 +116,7 @@ final class AppState: ObservableObject {
         return VitaminDModel.estimateSynthesizedIU(
             uvIndex: uv, minutes: elapsed, cloudCover: cc,
             skinType: session.skinType, spf: session.spf,
-            exposedPercent: session.exposedSkinPercent, age: settings.age
+            exposedPercent: session.clothing.exposedPercent, age: settings.age
         )
     }
 
@@ -216,18 +216,18 @@ final class AppState: ObservableObject {
         }
     }
 
-    func startSession(spf: Int, exposedPercent: Double) {
+    func startSession(spf: Int, clothing: ClothingLevel) {
         guard activeSession == nil else { return }
         sessionStartUV = currentUVIndex
         sessionStartCloudCover = cloudCover
-        let session = ExposureSession(start: Date(), end: nil, spf: spf, exposedSkinPercent: exposedPercent, skinType: settings.skinType)
+        let session = ExposureSession(start: Date(), end: nil, spf: spf, clothing: clothing, skinType: settings.skinType)
         activeSession = session
     }
 
-    func updateActiveSession(spf: Int, exposedPercent: Double) {
+    func updateActiveSession(spf: Int, clothing: ClothingLevel) {
         guard var session = activeSession else { return }
         session.spf = spf
-        session.exposedSkinPercent = exposedPercent
+        session.clothing = clothing
         activeSession = session
     }
 
@@ -244,7 +244,7 @@ final class AppState: ObservableObject {
             cloudCover: cc,
             skinType: session.skinType,
             spf: session.spf,
-            exposedPercent: session.exposedSkinPercent,
+            exposedPercent: session.clothing.exposedPercent,
             age: settings.age
         )
         session.estimatedIU = iu

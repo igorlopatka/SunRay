@@ -84,23 +84,16 @@ struct SettingsTabView: View {
 
                     Divider()
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Exposed Skin %")
-                                .font(.body)
-                            Spacer()
-                            Text("\(Int(appState.settings.defaultExposedPercent))%")
-                                .font(.body.bold().monospacedDigit())
-                                .foregroundStyle(
-                                    .linearGradient(
-                                        colors: [.blue, .cyan],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
+                    HStack {
+                        Text("Default Clothing")
+                            .font(.body)
+                        Spacer()
+                        Picker("Default Clothing", selection: $appState.settings.defaultClothing) {
+                            ForEach(ClothingLevel.allCases) { level in
+                                Text(level.shortName).tag(level)
+                            }
                         }
-                        Slider(value: $appState.settings.defaultExposedPercent, in: 5...100, step: 5)
-                            .tint(.blue)
+                        .pickerStyle(.menu)
                     }
                 }
             }

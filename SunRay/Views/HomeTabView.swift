@@ -235,7 +235,7 @@ struct HomeTabView: View {
                         Text("SPF \(session.spf)")
                         Divider()
                             .frame(height: 16)
-                        Text("\(Int(session.exposedSkinPercent))% skin")
+                        Text(session.clothing.shortName)
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
