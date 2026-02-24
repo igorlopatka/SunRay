@@ -90,28 +90,44 @@ struct GlassCard<Content: View>: View {
         content
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.ultraThickMaterial)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .strokeBorder(
-                                .linearGradient(
-                                    colors: [.white.opacity(0.5), .white.opacity(0.1), .clear],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.5
-                            )
-                    }
-                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-            }
+            .modifier(GlassCardBackground())
             .scaleEffect(isPressed ? 0.98 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
             .onTapGesture {}
             .onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity, pressing: { pressing in
                 isPressed = pressing
             }, perform: {})
+    }
+}
+
+private struct GlassCardBackground: ViewModifier {
+    private let cornerRadius: Double = 24
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            // Native Liquid Glass — blurs, refracts, and adapts to the content behind the card.
+            content
+                .glassEffect(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        } else {
+            // Fallback: hand-crafted material card for iOS 17–25.
+            content
+                .background {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(.ultraThickMaterial)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                                .strokeBorder(
+                                    .linearGradient(
+                                        colors: [.white.opacity(0.5), .white.opacity(0.1), .clear],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1.5
+                                )
+                        }
+                        .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                }
+        }
     }
 }
 

@@ -41,11 +41,19 @@ struct MainTabView: View {
                     }
                     .tag(1)
 
+                NavigationStack {
+                    UVMapView()
+                }
+                .tabItem {
+                    Label("UV Map", systemImage: "map.fill")
+                }
+                .tag(2)
+
                 SettingsTabView()
                     .tabItem {
                         Label("Settings", systemImage: "gearshape.fill")
                     }
-                    .tag(2)
+                    .tag(3)
             }
             .tint(.yellow)
         }
@@ -76,7 +84,13 @@ struct MainTabView: View {
                 .cyan.opacity(0.08), .clear, .cyan.opacity(0.08),
                 .blue.opacity(0.12), .cyan.opacity(0.08), .blue.opacity(0.15)
             ]
-        case 2:
+        case 2: // UV Map — green/teal tones to echo earth/environment
+            return [
+                .green.opacity(0.10), .teal.opacity(0.06), .green.opacity(0.08),
+                .teal.opacity(0.06), .clear, .teal.opacity(0.06),
+                .green.opacity(0.08), .teal.opacity(0.06), .green.opacity(0.10)
+            ]
+        case 3: // Settings
             return [
                 .blue.opacity(0.12), .cyan.opacity(0.06), .blue.opacity(0.10),
                 .cyan.opacity(0.06), .clear, .cyan.opacity(0.06),

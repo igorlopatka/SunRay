@@ -70,7 +70,7 @@ struct HomeTabView: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(appState.greeting)
-                    .font(.title2.bold())
+                    .font(.system(.title2, design: .serif).bold())
                     .foregroundStyle(
                         .linearGradient(
                             colors: [.yellow, .white],
@@ -117,7 +117,7 @@ struct HomeTabView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
                     Text(appState.uvIndexString)
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
+                        .font(.system(size: 56, weight: .bold, design: .serif))
                         .monospacedDigit()
                         .foregroundStyle(appState.uvColor)
                         .shadow(color: appState.uvColor.opacity(0.5), radius: 16, x: 0, y: 6)
@@ -125,7 +125,7 @@ struct HomeTabView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(appState.uvAdvisory)
-                            .font(.subheadline.bold())
+                            .font(.system(.subheadline, design: .serif).bold())
                             .foregroundStyle(.primary)
                         Label("\(appState.cloudCoverString) clouds", systemImage: "cloud.fill")
                             .font(.caption)
@@ -178,10 +178,10 @@ struct HomeTabView: View {
         VStack(spacing: 8) {
             HStack {
                 Text("\(Int(currentIU)) IU")
-                    .font(.title2.bold().monospacedDigit())
+                    .font(.system(.title2, design: .serif).bold().monospacedDigit())
                 Spacer()
                 Text("\(Int(appState.settings.dailyGoalIU)) IU")
-                    .font(.subheadline.monospacedDigit())
+                    .font(.system(.subheadline, design: .serif).monospacedDigit())
                     .foregroundStyle(.secondary)
             }
 
