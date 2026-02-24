@@ -83,4 +83,17 @@ struct UserSettings: Codable, Equatable {
     var defaultSPF: Int = 15
     var defaultClothing: ClothingLevel = .moderate
     var dailyGoalIU: Double = 800 // IU
+
+    // Forward-compatible decoding: missing keys fall back to the declared
+    // defaults rather than throwing. This means adding new fields to this
+    // struct in a future release never breaks existing installs where the
+    // saved JSON predates the field.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        skinType     = try c.decodeIfPresent(FitzpatrickSkinType.self, forKey: .skinType)     ?? .III
+        age          = try c.decodeIfPresent(Int.self,                 forKey: .age)          ?? 30
+        defaultSPF   = try c.decodeIfPresent(Int.self,                 forKey: .defaultSPF)   ?? 15
+        defaultClothing = try c.decodeIfPresent(ClothingLevel.self,    forKey: .defaultClothing) ?? .moderate
+        dailyGoalIU  = try c.decodeIfPresent(Double.self,              forKey: .dailyGoalIU)  ?? 800
+    }
 }

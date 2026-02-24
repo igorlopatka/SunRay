@@ -108,7 +108,9 @@ struct HistoryTabView: View {
                         Text("Vitamin D")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("\(Int(session.estimatedIU ?? 0)) IU")
+                        // estimatedIU is nil when the app was killed mid-session;
+                        // show em-dash rather than a misleading "0 IU".
+                        Text(session.estimatedIU.map { "\(Int($0)) IU" } ?? "—")
                             .font(.body.bold().monospacedDigit())
                     }
 

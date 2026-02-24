@@ -122,6 +122,8 @@ struct HomeTabView: View {
                         .foregroundStyle(appState.uvColor)
                         .shadow(color: appState.uvColor.opacity(0.5), radius: 16, x: 0, y: 6)
                         .shimmer(duration: 3.0)
+                        .accessibilityLabel("UV Index")
+                        .accessibilityValue(appState.currentUVIndex != nil ? "\(appState.uvIndexString), \(appState.uvAdvisory)" : "unavailable")
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(appState.uvAdvisory)
@@ -134,6 +136,11 @@ struct HomeTabView: View {
                             Label("~\(burnTime) unprotected burn", systemImage: "flame.fill")
                                 .font(.caption)
                                 .foregroundStyle(.orange)
+                        }
+                        if let fetchDate = appState.lastUVFetchDate {
+                            Label(fetchDate.formatted(.relative(presentation: .named)), systemImage: "arrow.clockwise")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
                         }
                     }
 
@@ -208,6 +215,8 @@ struct HomeTabView: View {
                 }
             }
             .frame(height: 12)
+            .accessibilityLabel("Vitamin D progress")
+            .accessibilityValue("\(Int(currentIU)) of \(Int(appState.settings.dailyGoalIU)) IU, \(Int(min(currentIU / appState.settings.dailyGoalIU, 1) * 100)) percent")
         }
     }
 

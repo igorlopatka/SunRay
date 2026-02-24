@@ -33,6 +33,9 @@ final class AppState: ObservableObject {
     // Daily synthesis accumulation (in-app only)
     @Published var todaySynthesizedIU: Double = 0
 
+    // When UV data was last successfully fetched; used to show staleness in the UI.
+    @Published var lastUVFetchDate: Date? = nil
+
     // UV snapshot captured when a session starts
     private var sessionStartUV: Double?
     private var sessionStartCloudCover: Double?
@@ -207,6 +210,14 @@ final class AppState: ObservableObject {
         history = await persistence.loadHistory()
         todaySynthesizedIU = todayIUFromHistory()
 
+        // Restore any session that was in-progress when the app was last killed.
+        if let record = await persistence.loadActiveSession() {
+            SRLog("AppState: restoring active session from disk (id: \(record.session.id))", level: .info)
+            activeSession = record.session
+            sessionStartUV = record.startUV
+            sessionStartCloudCover = record.startCloud
+        }
+
         do {
             try await locationService.requestAuthorization()
         } catch {
@@ -240,6 +251,7 @@ final class AppState: ObservableObject {
             SRLog("refreshEnvironmentalData: uv=\(uv), cloud=\(cc)", level: .info)
             currentUVIndex = uv
             cloudCover = cc
+            lastUVFetchDate = Date()
         } catch {
             SRLog("refreshEnvironmentalData failed: \(error)", level: .error)
             currentUVIndex = nil
@@ -265,6 +277,8 @@ final class AppState: ObservableObject {
         sessionStartCloudCover = cloudCover
         let session = ExposureSession(start: Date(), end: nil, spf: spf, clothing: clothing, skinType: settings.skinType)
         activeSession = session
+        let record = PersistenceStore.ActiveSessionRecord(session: session, startUV: sessionStartUV, startCloud: sessionStartCloudCover)
+        Task { try? await persistence.saveActiveSession(record) }
     }
 
     func updateActiveSession(spf: Int, clothing: ClothingLevel) {
@@ -272,6 +286,8 @@ final class AppState: ObservableObject {
         session.spf = spf
         session.clothing = clothing
         activeSession = session
+        let record = PersistenceStore.ActiveSessionRecord(session: session, startUV: sessionStartUV, startCloud: sessionStartCloudCover)
+        Task { try? await persistence.saveActiveSession(record) }
     }
 
     func stopSessionAndSave() async {
@@ -317,6 +333,8 @@ final class AppState: ObservableObject {
         activeSession = nil
         sessionStartUV = nil
         sessionStartCloudCover = nil
+        // Clear the crash-recovery file now that the session ended cleanly.
+        try? await persistence.saveActiveSession(nil)
     }
 
     func deleteSession(_ session: ExposureSession) {

@@ -79,6 +79,8 @@ struct UVMapView: View {
                 .strokeBorder(appState.uvColor.opacity(0.4), lineWidth: 1)
         }
         .shadow(color: appState.uvColor.opacity(0.3), radius: 8, x: 0, y: 4)
+        // VoiceOver: the annotation duplicates info already in the panel below; hide it.
+        .accessibilityHidden(true)
     }
 
     // MARK: - Info panel
@@ -94,6 +96,7 @@ struct UVMapView: View {
                         Text(appState.uvIndexString)
                             .font(.system(size: 36, weight: .bold, design: .serif).monospacedDigit())
                             .foregroundStyle(appState.uvColor)
+                            .accessibilityLabel("UV Index \(appState.uvIndexString), \(uvLevelLabel)")
                     }
 
                     Spacer()

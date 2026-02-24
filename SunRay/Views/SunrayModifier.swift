@@ -10,7 +10,8 @@ struct SunrayModifier: ViewModifier {
                 .allowsHitTesting(false)
                 .opacity(opacity)
                 .ignoresSafeArea()
-            // Top-right toggle + debug panel (visible at runtime)
+#if DEBUG
+            // Debug toggle — only visible in development builds, stripped from release.
             VStack {
                 HStack {
                     Spacer()
@@ -34,6 +35,7 @@ struct SunrayModifier: ViewModifier {
                 Spacer()
             }
             .allowsHitTesting(true)
+#endif
         }
     }
 }
