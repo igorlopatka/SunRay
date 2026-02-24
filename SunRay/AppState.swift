@@ -104,7 +104,10 @@ final class AppState: ObservableObject {
               let mins = VitaminDModel.burnTimeMinutes(uvIndex: uv, skinType: settings.skinType),
               mins.isFinite else { return nil }
         let m = Int(mins.rounded())
-        if m >= 120 { return "\(m / 60)h \(m % 60 == 0 ? "" : "\(m % 60)m")" }
+        if m >= 60 {
+            let rem = m % 60
+            return rem == 0 ? "\(m / 60)h" : "\(m / 60)h \(rem)m"
+        }
         return "\(m) min"
     }
 
@@ -134,7 +137,8 @@ final class AppState: ObservableObject {
         let minutes = VitaminDModel.recommendedMinutesToGoal(
             currentUV: uv,
             cloudCover: cloudCover ?? 0,
-            settings: settings
+            settings: settings,
+            alreadySynthesizedIU: todaySynthesizedIU
         )
         guard minutes > 0, minutes.isFinite, minutes <= 240 else { return nil }
         return .init(durationMinutes: Int(minutes.rounded()))

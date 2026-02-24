@@ -164,6 +164,25 @@ final class VitaminDModelTests: XCTestCase {
         XCTAssertTrue(minutesHighUV < minutesLowUV)
     }
 
+    func testRecommendedMinutesScalesWithRemainingGoal() {
+        let settings = UserSettings()
+        let full = VitaminDModel.recommendedMinutesToGoal(currentUV: 5, cloudCover: 0, settings: settings, alreadySynthesizedIU: 0)
+        let half = VitaminDModel.recommendedMinutesToGoal(currentUV: 5, cloudCover: 0, settings: settings, alreadySynthesizedIU: settings.dailyGoalIU / 2)
+        XCTAssertEqual(half, full / 2, accuracy: 0.001, "Half the remaining goal should take half the time")
+    }
+
+    func testRecommendedMinutesIsZeroWhenGoalMet() {
+        let settings = UserSettings()
+        let minutes = VitaminDModel.recommendedMinutesToGoal(currentUV: 5, cloudCover: 0, settings: settings, alreadySynthesizedIU: settings.dailyGoalIU)
+        XCTAssertEqual(minutes, 0)
+    }
+
+    func testRecommendedMinutesIsZeroWhenGoalExceeded() {
+        let settings = UserSettings()
+        let minutes = VitaminDModel.recommendedMinutesToGoal(currentUV: 5, cloudCover: 0, settings: settings, alreadySynthesizedIU: settings.dailyGoalIU + 200)
+        XCTAssertEqual(minutes, 0)
+    }
+
     // MARK: - Burn time
 
     func testBurnTimeZeroUVReturnsNil() {

@@ -83,7 +83,8 @@ enum VitaminDModel {
     static func recommendedMinutesToGoal(
         currentUV: Double,
         cloudCover: Double,
-        settings: UserSettings
+        settings: UserSettings,
+        alreadySynthesizedIU: Double = 0
     ) -> Double {
         guard currentUV > 0 else { return .infinity }
         let uvFactor = uvSaturationFactor(currentUV)
@@ -94,6 +95,8 @@ enum VitaminDModel {
         let ageF = ageFactor(for: settings.age)
         let iuPerMinute = baseIUPerMinute * uvFactor * spfFactor * cloudFactor * skinFactor * areaFactor * ageF
         guard iuPerMinute > 0 else { return .infinity }
-        return settings.dailyGoalIU / iuPerMinute
+        let remainingIU = max(0, settings.dailyGoalIU - alreadySynthesizedIU)
+        guard remainingIU > 0 else { return 0 }
+        return remainingIU / iuPerMinute
     }
 }

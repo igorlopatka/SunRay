@@ -42,7 +42,7 @@ struct SettingsTabView: View {
                         Spacer()
                         Picker("Skin Type", selection: $appState.settings.skinType) {
                             ForEach(FitzpatrickSkinType.allCases) { type in
-                                Text(type.rawValue).tag(type)
+                                Text(type.displayName).tag(type)
                             }
                         }
                         .pickerStyle(.menu)
