@@ -157,6 +157,37 @@ final class AppState: ObservableObject {
         s.currentUVIndex = 5.4
         s.cloudCover = 0.2
         s.settings = UserSettings()
+
+        let now = Date()
+        let cal = Calendar.current
+        let yesterday = cal.date(byAdding: .day, value: -1, to: now)!
+        let twoDaysAgo = cal.date(byAdding: .day, value: -2, to: now)!
+
+        s.history = [
+            // Today: one completed session
+            ExposureSession(
+                start: cal.date(byAdding: .hour, value: -2, to: now)!,
+                end: cal.date(byAdding: .hour, value: -1, to: now)!,
+                spf: 15, clothing: .light, skinType: .III, estimatedIU: 400
+            ),
+            // Yesterday: two sessions
+            ExposureSession(
+                start: cal.date(byAdding: .hour, value: -3, to: yesterday)!,
+                end: cal.date(byAdding: .hour, value: -2, to: yesterday)!,
+                spf: 30, clothing: .moderate, skinType: .III, estimatedIU: 210
+            ),
+            ExposureSession(
+                start: cal.date(byAdding: .minute, value: -90, to: yesterday)!,
+                end: cal.date(byAdding: .minute, value: -30, to: yesterday)!,
+                spf: 15, clothing: .light, skinType: .III, estimatedIU: 320
+            ),
+            // Two days ago
+            ExposureSession(
+                start: cal.date(byAdding: .hour, value: -2, to: twoDaysAgo)!,
+                end: cal.date(byAdding: .hour, value: -1, to: twoDaysAgo)!,
+                spf: 50, clothing: .heavy, skinType: .III, estimatedIU: 90
+            ),
+        ]
         s.todaySynthesizedIU = 400
         return s
     }()
@@ -196,7 +227,10 @@ final class AppState: ObservableObject {
         }
     }
 
-    func refreshEnvironmentalData() async {
+    // showAlertOnFailure should be true only for explicit user-triggered refreshes.
+    // Automatic background refreshes (location updates) must not alert — a
+    // transient WeatherKit failure would otherwise spam the user with modals.
+    func refreshEnvironmentalData(showAlertOnFailure: Bool = false) async {
         guard let loc = locationService.location else {
             SRLog("refreshEnvironmentalData: location is nil", level: .error)
             return
@@ -210,7 +244,9 @@ final class AppState: ObservableObject {
             SRLog("refreshEnvironmentalData failed: \(error)", level: .error)
             currentUVIndex = nil
             cloudCover = nil
-            activeAlert = .init(title: "UV Data Unavailable", message: "Could not fetch current UV index. Check your connection and try again.")
+            if showAlertOnFailure {
+                activeAlert = .init(title: "UV Data Unavailable", message: "Could not fetch UV index. Check your connection and try again.")
+            }
         }
     }
 

@@ -7,9 +7,9 @@ struct StartExposureScreen: View {
     @State private var spf: Int
     @State private var clothing: ClothingLevel
 
-    init() {
-        _spf = State(initialValue: 15)
-        _clothing = State(initialValue: .moderate)
+    init(initialSPF: Int, initialClothing: ClothingLevel) {
+        _spf = State(initialValue: max(1, initialSPF))
+        _clothing = State(initialValue: initialClothing)
     }
 
     var body: some View {
@@ -64,11 +64,6 @@ struct StartExposureScreen: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
-            }
-            .onAppear {
-                spf = appState.isSessionActive ? (appState.activeSession?.spf ?? appState.settings.defaultSPF) : appState.settings.defaultSPF
-                spf = max(1, spf)
-                clothing = appState.isSessionActive ? (appState.activeSession?.clothing ?? appState.settings.defaultClothing) : appState.settings.defaultClothing
             }
         }
     }

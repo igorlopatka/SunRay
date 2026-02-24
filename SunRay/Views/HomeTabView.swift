@@ -39,7 +39,7 @@ struct HomeTabView: View {
                         Task {
                             isRefreshing = true
                             defer { isRefreshing = false }
-                            await appState.refreshEnvironmentalData()
+                            await appState.refreshEnvironmentalData(showAlertOnFailure: true)
                         }
                     } label: {
                         if isRefreshing {
@@ -52,13 +52,16 @@ struct HomeTabView: View {
                 }
             }
             .sheet(isPresented: $showingSessionSheet) {
-                StartExposureScreen()
-                    .environmentObject(appState)
-                    .presentationBackground(.ultraThinMaterial)
-                    .presentationCornerRadius(32)
+                StartExposureScreen(
+                    initialSPF: appState.activeSession?.spf ?? appState.settings.defaultSPF,
+                    initialClothing: appState.activeSession?.clothing ?? appState.settings.defaultClothing
+                )
+                .environmentObject(appState)
+                .presentationBackground(.ultraThinMaterial)
+                .presentationCornerRadius(32)
             }
             .refreshable {
-                await appState.refreshEnvironmentalData()
+                await appState.refreshEnvironmentalData(showAlertOnFailure: true)
             }
         }
     }
