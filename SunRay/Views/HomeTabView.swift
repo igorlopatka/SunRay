@@ -31,6 +31,9 @@ struct HomeTabView: View {
                 }
                 .padding()
             }
+            .refreshable {
+                await appState.refreshEnvironmentalData(showAlertOnFailure: true)
+            }
             .background(.clear)
             .navigationTitle("SunRay")
             .toolbar {
@@ -177,8 +180,14 @@ struct HomeTabView: View {
                         Spacer()
                     }
                     .foregroundStyle(.secondary)
+                    .transition(.asymmetric(
+                        insertion: .push(from: .bottom).combined(with: .opacity),
+                        removal: .push(from: .top).combined(with: .opacity)
+                    ))
                 }
             }
+            // Animate the recommendation row appearing/disappearing (UV data arrives or goal met).
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: appState.exposureRecommendation != nil)
         }
     }
 
@@ -188,6 +197,8 @@ struct HomeTabView: View {
             HStack {
                 Text("\(Int(currentIU)) IU")
                     .font(.system(.title2, design: .serif).bold().monospacedDigit())
+                    .contentTransition(.numericText())
+                    .animation(.spring(response: 0.6, dampingFraction: 0.75), value: currentIU)
                 Spacer()
                 Text("\(Int(appState.settings.dailyGoalIU)) IU")
                     .font(.system(.subheadline, design: .serif).monospacedDigit())

@@ -13,9 +13,10 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            // Animated background gradient
+            // Animated background gradient — cross-fades between tab palettes.
             AnimatedMeshGradient(colors: backgroundColors)
                 .ignoresSafeArea()
+                .animation(.easeInOut(duration: 0.45), value: selectedTab)
 
             // Global Metal shader overlay — brightness and tint track live UV level.
             SunrayView(uvIndex: Float(appState.currentUVIndex ?? 5.0))
