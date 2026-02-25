@@ -6,6 +6,7 @@ struct StartExposureScreen: View {
 
     @State private var spf: Int
     @State private var clothing: ClothingLevel
+    @State private var hapticTrigger = false
 
     init(initialSPF: Int, initialClothing: ClothingLevel) {
         _spf = State(initialValue: max(1, initialSPF))
@@ -60,9 +61,11 @@ struct StartExposureScreen: View {
                         } else {
                             appState.startSession(spf: spf, clothing: clothing)
                         }
+                        hapticTrigger.toggle()
                         dismiss()
                     }
                     .buttonStyle(.borderedProminent)
+                    .sensoryFeedback(.success, trigger: hapticTrigger)
                 }
             }
         }

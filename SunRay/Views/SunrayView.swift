@@ -4,6 +4,8 @@ import MetalKit
 import os
 
 struct SunrayView: UIViewRepresentable {
+    var uvIndex: Float = 5.0
+
     func makeUIView(context: Context) -> MTKView {
         let mtk = MTKView()
         mtk.device = MTLCreateSystemDefaultDevice()
@@ -24,7 +26,7 @@ struct SunrayView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: MTKView, context: Context) {
-        // keep sun position in corner by default; could be driven by app state
+        context.coordinator.renderer?.uvIndex = uvIndex
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -41,6 +43,8 @@ import AppKit
 import os
 
 struct SunrayView: NSViewRepresentable {
+    var uvIndex: Float = 5.0
+
     func makeNSView(context: Context) -> MTKView {
         let mtk = MTKView()
         mtk.device = MTLCreateSystemDefaultDevice()
@@ -61,7 +65,7 @@ struct SunrayView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: MTKView, context: Context) {
-        // keep sun position in corner by default; could be driven by app state
+        context.coordinator.renderer?.uvIndex = uvIndex
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }

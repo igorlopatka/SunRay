@@ -17,8 +17,8 @@ struct MainTabView: View {
             AnimatedMeshGradient(colors: backgroundColors)
                 .ignoresSafeArea()
 
-            // Global Metal shader overlay for liquid glass effect
-            SunrayView()
+            // Global Metal shader overlay — brightness and tint track live UV level.
+            SunrayView(uvIndex: Float(appState.currentUVIndex ?? 5.0))
                 .allowsHitTesting(false)
                 .ignoresSafeArea()
                 .opacity(0.15)

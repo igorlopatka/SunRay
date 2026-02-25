@@ -11,6 +11,7 @@ struct HistoryTabView: View {
     @EnvironmentObject private var appState: AppState
     @State private var showingDeleteConfirmation = false
     @State private var sessionToDelete: ExposureSession?
+    @State private var deleteHapticTrigger = false
 
     var body: some View {
         NavigationStack {
@@ -152,11 +153,13 @@ struct HistoryTabView: View {
                     Button(role: .destructive) {
                         sessionToDelete = session
                         showingDeleteConfirmation = true
+                        deleteHapticTrigger.toggle()
                     } label: {
                         Image(systemName: "trash")
                             .font(.body)
                             .foregroundStyle(.red)
                     }
+                    .sensoryFeedback(.warning, trigger: deleteHapticTrigger)
                 }
             }
         }

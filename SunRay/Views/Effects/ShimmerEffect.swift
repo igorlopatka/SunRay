@@ -93,6 +93,7 @@ struct GlassCard<Content: View>: View {
             .modifier(GlassCardBackground())
             .scaleEffect(isPressed ? 0.98 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+            .sensoryFeedback(.selection, trigger: isPressed) { _, new in new }
             .onTapGesture {}
             .onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity, pressing: { pressing in
                 isPressed = pressing

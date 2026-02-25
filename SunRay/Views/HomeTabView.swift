@@ -122,6 +122,8 @@ struct HomeTabView: View {
                         .foregroundStyle(appState.uvColor)
                         .shadow(color: appState.uvColor.opacity(0.5), radius: 16, x: 0, y: 6)
                         .shimmer(duration: 3.0)
+                        .contentTransition(.numericText())
+                        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appState.currentUVIndex)
                         .accessibilityLabel("UV Index")
                         .accessibilityValue(appState.currentUVIndex != nil ? "\(appState.uvIndexString), \(appState.uvAdvisory)" : "unavailable")
 
@@ -212,6 +214,7 @@ struct HomeTabView: View {
                         )
                         .shadow(color: .yellow.opacity(0.6), radius: 6, x: 0, y: 3)
                         .shimmer(duration: 2.5, bounce: true)
+                        .animation(.spring(response: 0.9, dampingFraction: 0.75), value: currentIU)
                 }
             }
             .frame(height: 12)
@@ -223,6 +226,11 @@ struct HomeTabView: View {
     private var sessionControls: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 16) {
+                // Transitions between session-active and idle content animate as a spring.
+                // Haptics: "success" when session starts, medium impact when it stops.
+                Color.clear.frame(width: 0, height: 0)
+                    .sensoryFeedback(.success, trigger: appState.isSessionActive) { _, new in new }
+                    .sensoryFeedback(.impact(weight: .medium), trigger: appState.isSessionActive) { _, new in !new }
                 HStack {
                     Text("Sun Session")
                         .font(.headline)
@@ -263,6 +271,10 @@ struct HomeTabView: View {
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .transition(.asymmetric(
+                        insertion: .push(from: .bottom).combined(with: .opacity),
+                        removal: .push(from: .top).combined(with: .opacity)
+                    ))
 
                     // Live elapsed time and accumulated IU — refreshes every 30 seconds.
                     TimelineView(.periodic(from: session.start, by: 30)) { _ in
@@ -277,10 +289,18 @@ struct HomeTabView: View {
                         .font(.caption)
                         .foregroundStyle(.green)
                     }
+                    .transition(.asymmetric(
+                        insertion: .push(from: .bottom).combined(with: .opacity),
+                        removal: .push(from: .top).combined(with: .opacity)
+                    ))
                 } else {
                     Text("Track a session to estimate synthesized Vitamin D from sun exposure.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .transition(.asymmetric(
+                            insertion: .push(from: .top).combined(with: .opacity),
+                            removal: .push(from: .bottom).combined(with: .opacity)
+                        ))
                 }
 
                 HStack(spacing: 12) {
@@ -320,6 +340,7 @@ struct HomeTabView: View {
                     }
                 }
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.78), value: appState.isSessionActive)
         }
     }
 

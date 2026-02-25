@@ -26,6 +26,10 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
     var intensity: Float = 1.0
     var color: SIMD3<Float> = SIMD3(1.0, 0.95, 0.75)
 
+    // Set by the presenting view to reflect live UV conditions.
+    // Drives ray brightness and warm/cool tint so the overlay feels reactive.
+    var uvIndex: Float = 5.0
+
     init?(mtkView: MTKView) {
         guard let device = mtkView.device else { return nil }
         self.device = device
@@ -76,14 +80,26 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         let now = Float(CFAbsoluteTimeGetCurrent() - startTime)
         let aspect = Float(view.drawableSize.width / max(1.0, view.drawableSize.height))
 
+        // Map UV 0–11 → 0–1 and derive a perceptual intensity scalar and tint.
+        // At low UV the rays are dim and cool-white; at high UV they are brighter
+        // and shift toward warm amber — giving passive, ambient feedback about
+        // current conditions without the user having to read any numbers.
+        let t = max(0, min(1, uvIndex / 11.0))
+        let uvIntensity = 0.45 + t * 0.75        // 0.45 (UV 0) → 1.20 (UV 11)
+        let uvColor = SIMD3<Float>(
+            1.00,                                 // R always 1
+            0.97 - t * 0.26,                      // G: 0.97 (cool) → 0.71 (warm)
+            0.92 - t * 0.54                        // B: 0.92 (cool) → 0.38 (warm)
+        )
+
         var uniforms = Uniforms(
             sunPos: SIMD2(Float(sunPosition.x), Float(sunPosition.y)),
             time: now,
-            intensity: SunrayDebugSettings.shared.intensity,
+            intensity: SunrayDebugSettings.shared.intensity * uvIntensity,
             aspect: aspect,
             beamWidth: SunrayDebugSettings.shared.beamWidth,
             beamCount: SunrayDebugSettings.shared.beamCount,
-            color: color,
+            color: uvColor,
             glassiness: 0.8,     // Liquid glass effect strength
             refraction: 0.5,     // Refraction intensity
             iridescence: 0.7     // Iridescent color shifting
