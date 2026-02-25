@@ -80,6 +80,24 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         let now = Float(CFAbsoluteTimeGetCurrent() - startTime)
         let aspect = Float(view.drawableSize.width / max(1.0, view.drawableSize.height))
 
+        // Derive sun position from the wall-clock time of day so the shader's
+        // god-rays originate from where the sun actually is in the sky.
+        // Arc: sunrise ~6 am at the left horizon → solar noon at ~12 pm near
+        // the zenith → sunset ~6 pm at the right horizon.  Outside daylight
+        // hours the sun is pushed off-screen so only the ambient scatter remains.
+        let cal     = Calendar.current
+        let nowDate = Date()
+        let hour    = Float(cal.component(.hour,   from: nowDate))
+        let minute  = Float(cal.component(.minute, from: nowDate))
+        let tod     = hour + minute / 60.0         // 0 … 23.999
+        let sunriseH: Float = 6.0
+        let sunsetH:  Float = 18.0
+        let isDaytime = tod >= sunriseH && tod <= sunsetH
+        let dayProg   = max(0, min(1, (tod - sunriseH) / (sunsetH - sunriseH)))
+        let solarX    = isDaytime ? dayProg : (tod < sunriseH ? -0.15 : 1.15)
+        // y is inverted (0 = top of screen). sin arc peaks at noon (dayProg=0.5).
+        let solarY    = isDaytime ? max(0.04, 1.0 - sin(dayProg * .pi) * 0.96) : 1.3
+
         // Map UV 0–11 → 0–1 and derive a perceptual intensity scalar and tint.
         // At low UV the rays are dim and cool-white; at high UV they are brighter
         // and shift toward warm amber — giving passive, ambient feedback about
@@ -93,7 +111,7 @@ final class SunrayRenderer: NSObject, MTKViewDelegate {
         )
 
         var uniforms = Uniforms(
-            sunPos: SIMD2(Float(sunPosition.x), Float(sunPosition.y)),
+            sunPos: SIMD2(solarX, solarY),
             time: now,
             intensity: SunrayDebugSettings.shared.intensity * uvIntensity,
             aspect: aspect,

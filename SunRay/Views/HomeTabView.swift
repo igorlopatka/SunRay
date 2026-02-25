@@ -287,15 +287,25 @@ struct HomeTabView: View {
                         removal: .push(from: .top).combined(with: .opacity)
                     ))
 
-                    // Live elapsed time and accumulated IU — refreshes every 30 seconds.
-                    TimelineView(.periodic(from: session.start, by: 30)) { _ in
-                        let elapsed = Int(Date().timeIntervalSince(session.start) / 60)
+                    // Live elapsed time and accumulated IU — refreshes every 10 s for
+                    // a responsive feel while the user watches their session progress.
+                    TimelineView(.periodic(from: session.start, by: 10)) { _ in
+                        let totalSec = Int(Date().timeIntervalSince(session.start))
+                        let hours    = totalSec / 3600
+                        let minutes  = (totalSec % 3600) / 60
+                        let elapsedText: String = {
+                            if totalSec < 60           { return "< 1 min" }
+                            else if hours == 0          { return "\(minutes) min" }
+                            else                        { return "\(hours)h \(minutes)m" }
+                        }()
                         let liveIU = Int(appState.liveSessionIU)
                         HStack(spacing: 8) {
-                            Label("\(elapsed) min elapsed", systemImage: "timer")
+                            Label(elapsedText, systemImage: "timer")
                             Spacer()
                             Text("~\(liveIU) IU so far")
                                 .fontWeight(.semibold)
+                                .contentTransition(.numericText())
+                                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: liveIU)
                         }
                         .font(.caption)
                         .foregroundStyle(.green)
