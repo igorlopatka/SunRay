@@ -4,6 +4,9 @@ import MetalKit
 import os
 
 struct SunrayView: UIViewRepresentable {
+    var uvIndex: Float = 5.0
+    @Environment(\.scenePhase) private var scenePhase
+
     func makeUIView(context: Context) -> MTKView {
         let mtk = MTKView()
         mtk.device = MTLCreateSystemDefaultDevice()
@@ -24,7 +27,9 @@ struct SunrayView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: MTKView, context: Context) {
-        // keep sun position in corner by default; could be driven by app state
+        context.coordinator.renderer?.uvIndex = uvIndex
+        // Halt the 60 fps render loop while the app is not visible — saves GPU/battery.
+        uiView.isPaused = scenePhase != .active
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -41,6 +46,9 @@ import AppKit
 import os
 
 struct SunrayView: NSViewRepresentable {
+    var uvIndex: Float = 5.0
+    @Environment(\.scenePhase) private var scenePhase
+
     func makeNSView(context: Context) -> MTKView {
         let mtk = MTKView()
         mtk.device = MTLCreateSystemDefaultDevice()
@@ -61,7 +69,8 @@ struct SunrayView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: MTKView, context: Context) {
-        // keep sun position in corner by default; could be driven by app state
+        context.coordinator.renderer?.uvIndex = uvIndex
+        nsView.isPaused = scenePhase != .active
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }

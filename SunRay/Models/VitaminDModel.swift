@@ -1,13 +1,20 @@
 import Foundation
 
 enum VitaminDModel {
-    // Approximate IU of vitamin D₃ synthesized per minute at UV index 1,
-    // fair skin (Type I), no sunscreen, full-body exposure.
-    // Derived from Holick (2007): ~1000 IU in 10-15 min of midday summer sun
-    // (UV ~6-8) for Type I-III with ~25% body exposed, which back-calculates
-    // to roughly 15-25 IU/min/UV-index. We use 20 as a central estimate.
+    // Scale factor for the Michaelis-Menten UV saturation model.
+    // Calibrated so that UV=5, Type III skin, SPF 1, 25% exposed, clear sky, age ≤20
+    // yields ~562 IU per 30 min — consistent with the Holick (2007) midday reference.
     // Ref: Holick MF. N Engl J Med. 2007;357(3):266-281.
-    static let baseIUPerMinuteAtUV1: Double = 20
+    static let baseIUPerMinute: Double = 60
+
+    // Michaelis-Menten saturation curve for UV response.
+    // Models diminishing returns as UV index rises — skin can only absorb so much UVB
+    // before the conversion rate plateaus. Factor = 1.0 at UV≈2, approaches 3.0 asymptotically.
+    // More physiologically accurate than a linear model at high UV values (8+).
+    // Ref: Engelsen O. Photochem Photobiol Sci. 2010;9(3):369-379.
+    static func uvSaturationFactor(_ uvIndex: Double) -> Double {
+        (uvIndex * 3.0) / (4.0 + uvIndex)
+    }
 
     // SPF attenuation: SPF N blocks (1 - 1/N) of UVB.
     // Ref: Matsuoka LY et al. J Clin Endocrinol Metab. 1987;64(6):1165-1168.
@@ -25,36 +32,71 @@ enum VitaminDModel {
         max(0.1, 1.0 - 0.75 * cloudCover)
     }
 
+    // Age-related decline in cutaneous vitamin D synthesis.
+    // Synthesis peaks before age 20 and declines ~1.5% per year thereafter,
+    // reaching ~25% of peak capacity by age 70 (floor).
+    // Ref: MacLaughlin J, Holick MF. J Clin Invest. 1985;76(4):1536-1538.
+    static func ageFactor(for age: Int) -> Double {
+        if age <= 20 { return 1.0 }
+        if age >= 70 { return 0.25 }
+        return max(0.25, 1.0 - Double(age - 20) * 0.015)
+    }
+
+    // Estimated time-to-burn (sunburn threshold) at the given UV index.
+    // Based on MED (Minimal Erythema Dose) values scaled per Fitzpatrick type.
+    // Returns nil when UV is 0 (no burn risk / no synthesis).
+    // Ref: WHO UV Index fact sheet; McKinlay AF & Diffey BL. CIE Research Note. 1987.
+    static func burnTimeMinutes(uvIndex: Double, skinType: FitzpatrickSkinType) -> Double? {
+        guard uvIndex > 0 else { return nil }
+        let minutesAtUV1: Double
+        switch skinType {
+        case .I:   minutesAtUV1 = 67
+        case .II:  minutesAtUV1 = 100
+        case .III: minutesAtUV1 = 200
+        case .IV:  minutesAtUV1 = 300
+        case .V:   minutesAtUV1 = 400
+        case .VI:  minutesAtUV1 = 500
+        }
+        return minutesAtUV1 / uvIndex
+    }
+
     static func estimateSynthesizedIU(
         uvIndex: Double,
         minutes: Double,
         cloudCover: Double,
         skinType: FitzpatrickSkinType,
         spf: Int,
-        exposedPercent: Double
+        exposedPercent: Double,
+        age: Int = 20
     ) -> Double {
         guard uvIndex > 0, minutes > 0, exposedPercent > 0 else { return 0 }
+        let uvFactor = uvSaturationFactor(uvIndex)
         let spfFactor = attenuationForSPF(spf)
         let cloudFactor = cloudCoverFactor(cloudCover)
         let skinFactor = skinType.synthesisFactor
         let areaFactor = max(0, min(1, exposedPercent / 100.0))
-        let iuPerMinute = baseIUPerMinuteAtUV1 * uvIndex * spfFactor * cloudFactor * skinFactor * areaFactor
+        let ageF = ageFactor(for: age)
+        let iuPerMinute = baseIUPerMinute * uvFactor * spfFactor * cloudFactor * skinFactor * areaFactor * ageF
         return max(0, iuPerMinute * minutes)
     }
 
     static func recommendedMinutesToGoal(
         currentUV: Double,
         cloudCover: Double,
-        settings: UserSettings
+        settings: UserSettings,
+        alreadySynthesizedIU: Double = 0
     ) -> Double {
         guard currentUV > 0 else { return .infinity }
+        let uvFactor = uvSaturationFactor(currentUV)
         let spfFactor = attenuationForSPF(settings.defaultSPF)
         let cloudFactor = cloudCoverFactor(cloudCover)
         let skinFactor = settings.skinType.synthesisFactor
-        let areaFactor = max(0, min(1, settings.defaultExposedPercent / 100.0))
-        let iuPerMinute = baseIUPerMinuteAtUV1 * currentUV * spfFactor * cloudFactor * skinFactor * areaFactor
+        let areaFactor = max(0, min(1, settings.defaultClothing.exposedPercent / 100.0))
+        let ageF = ageFactor(for: settings.age)
+        let iuPerMinute = baseIUPerMinute * uvFactor * spfFactor * cloudFactor * skinFactor * areaFactor * ageF
         guard iuPerMinute > 0 else { return .infinity }
-        return settings.dailyGoalIU / iuPerMinute
+        let remainingIU = max(0, settings.dailyGoalIU - alreadySynthesizedIU)
+        guard remainingIU > 0 else { return 0 }
+        return remainingIU / iuPerMinute
     }
 }
-

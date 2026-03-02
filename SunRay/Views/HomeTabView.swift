@@ -31,6 +31,9 @@ struct HomeTabView: View {
                 }
                 .padding()
             }
+            .refreshable {
+                await appState.refreshEnvironmentalData(showAlertOnFailure: true)
+            }
             .background(.clear)
             .navigationTitle("SunRay")
             .toolbar {
@@ -39,7 +42,7 @@ struct HomeTabView: View {
                         Task {
                             isRefreshing = true
                             defer { isRefreshing = false }
-                            await appState.refreshEnvironmentalData()
+                            await appState.refreshEnvironmentalData(showAlertOnFailure: true)
                         }
                     } label: {
                         if isRefreshing {
@@ -52,13 +55,16 @@ struct HomeTabView: View {
                 }
             }
             .sheet(isPresented: $showingSessionSheet) {
-                StartExposureScreen()
-                    .environmentObject(appState)
-                    .presentationBackground(.ultraThinMaterial)
-                    .presentationCornerRadius(32)
+                StartExposureScreen(
+                    initialSPF: appState.activeSession?.spf ?? appState.settings.defaultSPF,
+                    initialClothing: appState.activeSession?.clothing ?? appState.settings.defaultClothing
+                )
+                .environmentObject(appState)
+                .presentationBackground(.ultraThinMaterial)
+                .presentationCornerRadius(32)
             }
             .refreshable {
-                await appState.refreshEnvironmentalData()
+                await appState.refreshEnvironmentalData(showAlertOnFailure: true)
             }
         }
     }
@@ -66,8 +72,8 @@ struct HomeTabView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Hello, \(appState.displayName)")
-                    .font(.title2.bold())
+                Text(appState.greeting)
+                    .font(.system(.title2, design: .serif).bold())
                     .foregroundStyle(
                         .linearGradient(
                             colors: [.yellow, .white],
@@ -114,19 +120,33 @@ struct HomeTabView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
                     Text(appState.uvIndexString)
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
+                        .font(.system(size: 56, weight: .bold, design: .serif))
                         .monospacedDigit()
                         .foregroundStyle(appState.uvColor)
                         .shadow(color: appState.uvColor.opacity(0.5), radius: 16, x: 0, y: 6)
                         .shimmer(duration: 3.0)
+                        .contentTransition(.numericText())
+                        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appState.currentUVIndex)
+                        .accessibilityLabel("UV Index")
+                        .accessibilityValue(appState.currentUVIndex != nil ? "\(appState.uvIndexString), \(appState.uvAdvisory)" : "unavailable")
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(appState.uvAdvisory)
-                            .font(.subheadline.bold())
+                            .font(.system(.subheadline, design: .serif).bold())
                             .foregroundStyle(.primary)
                         Label("\(appState.cloudCoverString) clouds", systemImage: "cloud.fill")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        if let burnTime = appState.burnTimeString {
+                            Label("~\(burnTime) unprotected burn", systemImage: "flame.fill")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                        if let fetchDate = appState.lastUVFetchDate {
+                            Label(fetchDate.formatted(.relative(presentation: .named)), systemImage: "arrow.clockwise")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
 
                     Spacer()
@@ -142,58 +162,86 @@ struct HomeTabView: View {
                     .font(.headline)
                     .foregroundStyle(.secondary)
 
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("\(Int(appState.todaySynthesizedIU)) IU")
-                            .font(.title2.bold().monospacedDigit())
-                        Spacer()
-                        Text("\(Int(appState.settings.dailyGoalIU)) IU")
-                            .font(.subheadline.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                // During an active session, include live accumulated IU in the bar.
+                if appState.isSessionActive {
+                    TimelineView(.periodic(from: .now, by: 30)) { _ in
+                        vitaminDBar(currentIU: appState.todaySynthesizedIU + appState.liveSessionIU)
                     }
-
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(.quaternary)
-                                .frame(height: 12)
-
-                            Capsule()
-                                .fill(
-                                    .linearGradient(
-                                        colors: [.yellow, .white],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(
-                                    width: geo.size.width * min(appState.todaySynthesizedIU / appState.settings.dailyGoalIU, 1.0),
-                                    height: 12
-                                )
-                                .shadow(color: .yellow.opacity(0.6), radius: 6, x: 0, y: 3)
-                                .shimmer(duration: 2.5, bounce: true)
-                        }
-                    }
-                    .frame(height: 12)
+                } else {
+                    vitaminDBar(currentIU: appState.todaySynthesizedIU)
                 }
 
                 if let recommendation = appState.exposureRecommendation {
                     HStack(spacing: 8) {
                         Image(systemName: "sun.min.fill")
                             .foregroundStyle(.yellow)
-                        Text("Recommended: \(recommendation.durationMinutes) min \(recommendation.windowText)")
+                        Text("~\(recommendation.durationMinutes) min recommended now")
                             .font(.footnote)
                         Spacer()
                     }
                     .foregroundStyle(.secondary)
+                    .transition(.asymmetric(
+                        insertion: .push(from: .bottom).combined(with: .opacity),
+                        removal: .push(from: .top).combined(with: .opacity)
+                    ))
                 }
             }
+            // Animate the recommendation row appearing/disappearing (UV data arrives or goal met).
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: appState.exposureRecommendation != nil)
+        }
+    }
+
+    @ViewBuilder
+    private func vitaminDBar(currentIU: Double) -> some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("\(Int(currentIU)) IU")
+                    .font(.system(.title2, design: .serif).bold().monospacedDigit())
+                    .contentTransition(.numericText())
+                    .animation(.spring(response: 0.6, dampingFraction: 0.75), value: currentIU)
+                Spacer()
+                Text("\(Int(appState.settings.dailyGoalIU)) IU")
+                    .font(.system(.subheadline, design: .serif).monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.quaternary)
+                        .frame(height: 12)
+
+                    Capsule()
+                        .fill(
+                            .linearGradient(
+                                colors: [.yellow, .white],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(
+                            width: geo.size.width * min(currentIU / appState.settings.dailyGoalIU, 1.0),
+                            height: 12
+                        )
+                        .shadow(color: .yellow.opacity(0.6), radius: 6, x: 0, y: 3)
+                        .shimmer(duration: 2.5, bounce: true)
+                        .animation(.spring(response: 0.9, dampingFraction: 0.75), value: currentIU)
+                }
+            }
+            .frame(height: 12)
+            .accessibilityLabel("Vitamin D progress")
+            .accessibilityValue("\(Int(currentIU)) of \(Int(appState.settings.dailyGoalIU)) IU, \(Int(min(currentIU / appState.settings.dailyGoalIU, 1) * 100)) percent")
         }
     }
 
     private var sessionControls: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 16) {
+                // Transitions between session-active and idle content animate as a spring.
+                // Haptics: "success" when session starts, medium impact when it stops.
+                Color.clear.frame(width: 0, height: 0)
+                    .sensoryFeedback(.success, trigger: appState.isSessionActive) { _, new in new }
+                    .sensoryFeedback(.impact(weight: .medium), trigger: appState.isSessionActive) { _, new in !new }
                 HStack {
                     Text("Sun Session")
                         .font(.headline)
@@ -230,14 +278,50 @@ struct HomeTabView: View {
                         Text("SPF \(session.spf)")
                         Divider()
                             .frame(height: 16)
-                        Text("\(Int(session.exposedSkinPercent))% skin")
+                        Text(session.clothing.shortName)
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .transition(.asymmetric(
+                        insertion: .push(from: .bottom).combined(with: .opacity),
+                        removal: .push(from: .top).combined(with: .opacity)
+                    ))
+
+                    // Live elapsed time and accumulated IU — refreshes every 10 s for
+                    // a responsive feel while the user watches their session progress.
+                    TimelineView(.periodic(from: session.start, by: 10)) { _ in
+                        let totalSec = Int(Date().timeIntervalSince(session.start))
+                        let hours    = totalSec / 3600
+                        let minutes  = (totalSec % 3600) / 60
+                        let elapsedText: String = {
+                            if totalSec < 60           { return "< 1 min" }
+                            else if hours == 0          { return "\(minutes) min" }
+                            else                        { return "\(hours)h \(minutes)m" }
+                        }()
+                        let liveIU = Int(appState.liveSessionIU)
+                        HStack(spacing: 8) {
+                            Label(elapsedText, systemImage: "timer")
+                            Spacer()
+                            Text("~\(liveIU) IU so far")
+                                .fontWeight(.semibold)
+                                .contentTransition(.numericText())
+                                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: liveIU)
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                    }
+                    .transition(.asymmetric(
+                        insertion: .push(from: .bottom).combined(with: .opacity),
+                        removal: .push(from: .top).combined(with: .opacity)
+                    ))
                 } else {
                     Text("Track a session to estimate synthesized Vitamin D from sun exposure.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .transition(.asymmetric(
+                            insertion: .push(from: .top).combined(with: .opacity),
+                            removal: .push(from: .bottom).combined(with: .opacity)
+                        ))
                 }
 
                 HStack(spacing: 12) {
@@ -277,6 +361,7 @@ struct HomeTabView: View {
                     }
                 }
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.78), value: appState.isSessionActive)
         }
     }
 
@@ -287,7 +372,7 @@ struct HomeTabView: View {
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
             if !appState.healthKitAuthorized {
-                Label("Health permissions needed to save UV exposure.", systemImage: "exclamationmark.triangle.fill")
+                Label("Health permissions needed to save UV and vitamin D data.", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
                     .foregroundStyle(.yellow)
             }

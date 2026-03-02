@@ -33,6 +33,9 @@ final class AppState: ObservableObject {
     // Daily synthesis accumulation (in-app only)
     @Published var todaySynthesizedIU: Double = 0
 
+    // When UV data was last successfully fetched; used to show staleness in the UI.
+    @Published var lastUVFetchDate: Date? = nil
+
     // UV snapshot captured when a session starts
     private var sessionStartUV: Double?
     private var sessionStartCloudCover: Double?
@@ -41,7 +44,14 @@ final class AppState: ObservableObject {
 
     var allSessions: [ExposureSession] { history }
 
-    var displayName: String { "SunRay" }
+    var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        default:      return "Good evening"
+        }
+    }
 
     var locationSummary: String {
         switch locationService.authorizationStatus {
@@ -68,10 +78,11 @@ final class AppState: ObservableObject {
     var uvColor: Color {
         guard let uv = currentUVIndex else { return .secondary }
         switch uv {
-        case ..<3: return .green
+        case ..<3:  return .green
         case 3..<6: return .yellow
-        case 6..<11: return .red
-        default: return .red
+        case 6..<8: return .orange
+        case 8..<11: return .red
+        default:    return .purple // Extreme (11+)
         }
     }
 
@@ -82,29 +93,58 @@ final class AppState: ObservableObject {
 
     var uvAdvisory: String {
         guard let uv = currentUVIndex else { return "—" }
-        if uv < 3 { return "Low risk. Synthesis may be limited." }
-        if uv < 6 { return "Moderate. Short exposure advised." }
-        if uv < 8 { return "High. Use protection." }
-        if uv < 11 { return "Very high. Limit exposure."
+        if uv < 3  { return "Low — UVB too weak for significant synthesis." }
+        if uv < 6  { return "Moderate — short exposure effective." }
+        if uv < 8  { return "High — limit exposure, apply SPF." }
+        if uv < 11 { return "Very high — minimize direct sun." }
+        return "Extreme — avoid sun exposure."
+    }
+
+    // Estimated time-to-burn for unprotected skin at the current UV index.
+    // Does not account for SPF — multiply by SPF factor for protected estimate.
+    var burnTimeString: String? {
+        guard let uv = currentUVIndex,
+              let mins = VitaminDModel.burnTimeMinutes(uvIndex: uv, skinType: settings.skinType),
+              mins.isFinite else { return nil }
+        let m = Int(mins.rounded())
+        if m >= 60 {
+            let rem = m % 60
+            return rem == 0 ? "\(m / 60)h" : "\(m / 60)h \(rem)m"
         }
-        return "Extreme. Avoid exposure."
+        return "\(m) min"
+    }
+
+    // Estimated IU accumulated so far in the active session (updated by caller via timer).
+    var liveSessionIU: Double {
+        guard let session = activeSession else { return 0 }
+        let elapsed = Date().timeIntervalSince(session.start) / 60.0
+        guard elapsed > 0 else { return 0 }
+        let uv = sessionStartUV ?? currentUVIndex ?? 0
+        let cc = sessionStartCloudCover ?? cloudCover ?? 0
+        return VitaminDModel.estimateSynthesizedIU(
+            uvIndex: uv, minutes: elapsed, cloudCover: cc,
+            skinType: session.skinType, spf: session.spf,
+            exposedPercent: session.clothing.exposedPercent, age: settings.age
+        )
     }
 
     struct ExposureRecommendation {
         let durationMinutes: Int
-        let windowText: String
     }
 
+    // Returns a recommendation only when UV ≥ 3 (below this threshold UVB is too
+    // weak for meaningful vitamin D synthesis regardless of exposure duration).
+    // Caps at 240 min to avoid surfacing unrealistic estimates.
     var exposureRecommendation: ExposureRecommendation? {
-        guard let uv = currentUVIndex else { return nil }
+        guard let uv = currentUVIndex, uv >= 3 else { return nil }
         let minutes = VitaminDModel.recommendedMinutesToGoal(
             currentUV: uv,
             cloudCover: cloudCover ?? 0,
-            settings: settings
+            settings: settings,
+            alreadySynthesizedIU: todaySynthesizedIU
         )
-        guard minutes > 0, minutes.isFinite else { return nil }
-        let window = (uv >= 3) ? "now" : "later today"
-        return .init(durationMinutes: Int(minutes.rounded()), windowText: window)
+        guard minutes > 0, minutes.isFinite, minutes <= 240 else { return nil }
+        return .init(durationMinutes: Int(minutes.rounded()))
     }
 
     init() {
@@ -120,6 +160,37 @@ final class AppState: ObservableObject {
         s.currentUVIndex = 5.4
         s.cloudCover = 0.2
         s.settings = UserSettings()
+
+        let now = Date()
+        let cal = Calendar.current
+        let yesterday = cal.date(byAdding: .day, value: -1, to: now)!
+        let twoDaysAgo = cal.date(byAdding: .day, value: -2, to: now)!
+
+        s.history = [
+            // Today: one completed session
+            ExposureSession(
+                start: cal.date(byAdding: .hour, value: -2, to: now)!,
+                end: cal.date(byAdding: .hour, value: -1, to: now)!,
+                spf: 15, clothing: .light, skinType: .III, estimatedIU: 400
+            ),
+            // Yesterday: two sessions
+            ExposureSession(
+                start: cal.date(byAdding: .hour, value: -3, to: yesterday)!,
+                end: cal.date(byAdding: .hour, value: -2, to: yesterday)!,
+                spf: 30, clothing: .moderate, skinType: .III, estimatedIU: 210
+            ),
+            ExposureSession(
+                start: cal.date(byAdding: .minute, value: -90, to: yesterday)!,
+                end: cal.date(byAdding: .minute, value: -30, to: yesterday)!,
+                spf: 15, clothing: .light, skinType: .III, estimatedIU: 320
+            ),
+            // Two days ago
+            ExposureSession(
+                start: cal.date(byAdding: .hour, value: -2, to: twoDaysAgo)!,
+                end: cal.date(byAdding: .hour, value: -1, to: twoDaysAgo)!,
+                spf: 50, clothing: .heavy, skinType: .III, estimatedIU: 90
+            ),
+        ]
         s.todaySynthesizedIU = 400
         return s
     }()
@@ -138,6 +209,14 @@ final class AppState: ObservableObject {
         }
         history = await persistence.loadHistory()
         todaySynthesizedIU = todayIUFromHistory()
+
+        // Restore any session that was in-progress when the app was last killed.
+        if let record = await persistence.loadActiveSession() {
+            SRLog("AppState: restoring active session from disk (id: \(record.session.id))", level: .info)
+            activeSession = record.session
+            sessionStartUV = record.startUV
+            sessionStartCloudCover = record.startCloud
+        }
 
         do {
             try await locationService.requestAuthorization()
@@ -159,7 +238,10 @@ final class AppState: ObservableObject {
         }
     }
 
-    func refreshEnvironmentalData() async {
+    // showAlertOnFailure should be true only for explicit user-triggered refreshes.
+    // Automatic background refreshes (location updates) must not alert — a
+    // transient WeatherKit failure would otherwise spam the user with modals.
+    func refreshEnvironmentalData(showAlertOnFailure: Bool = false) async {
         guard let loc = locationService.location else {
             SRLog("refreshEnvironmentalData: location is nil", level: .error)
             return
@@ -169,11 +251,14 @@ final class AppState: ObservableObject {
             SRLog("refreshEnvironmentalData: uv=\(uv), cloud=\(cc)", level: .info)
             currentUVIndex = uv
             cloudCover = cc
+            lastUVFetchDate = Date()
         } catch {
             SRLog("refreshEnvironmentalData failed: \(error)", level: .error)
             currentUVIndex = nil
             cloudCover = nil
-            activeAlert = .init(title: "UV Data Unavailable", message: "Could not fetch current UV index. Check your connection and try again.")
+            if showAlertOnFailure {
+                activeAlert = .init(title: "UV Data Unavailable", message: "Could not fetch UV index. Check your connection and try again.")
+            }
         }
     }
 
@@ -186,19 +271,23 @@ final class AppState: ObservableObject {
         }
     }
 
-    func startSession(spf: Int, exposedPercent: Double) {
+    func startSession(spf: Int, clothing: ClothingLevel) {
         guard activeSession == nil else { return }
         sessionStartUV = currentUVIndex
         sessionStartCloudCover = cloudCover
-        let session = ExposureSession(start: Date(), end: nil, spf: spf, exposedSkinPercent: exposedPercent, skinType: settings.skinType)
+        let session = ExposureSession(start: Date(), end: nil, spf: spf, clothing: clothing, skinType: settings.skinType)
         activeSession = session
+        let record = PersistenceStore.ActiveSessionRecord(session: session, startUV: sessionStartUV, startCloud: sessionStartCloudCover)
+        Task { try? await persistence.saveActiveSession(record) }
     }
 
-    func updateActiveSession(spf: Int, exposedPercent: Double) {
+    func updateActiveSession(spf: Int, clothing: ClothingLevel) {
         guard var session = activeSession else { return }
         session.spf = spf
-        session.exposedSkinPercent = exposedPercent
+        session.clothing = clothing
         activeSession = session
+        let record = PersistenceStore.ActiveSessionRecord(session: session, startUV: sessionStartUV, startCloud: sessionStartCloudCover)
+        Task { try? await persistence.saveActiveSession(record) }
     }
 
     func stopSessionAndSave() async {
@@ -214,7 +303,8 @@ final class AppState: ObservableObject {
             cloudCover: cc,
             skinType: session.skinType,
             spf: session.spf,
-            exposedPercent: session.exposedSkinPercent
+            exposedPercent: session.clothing.exposedPercent,
+            age: settings.age
         )
         session.estimatedIU = iu
 
@@ -223,6 +313,12 @@ final class AppState: ObservableObject {
             try await hkService.saveUVExposure(durationMinutes: minutes, uvIndex: uv, location: locationService.location)
         } catch {
             SRLog("AppState: HealthKit saveUVExposure failed: \(error)", level: .error)
+        }
+
+        do {
+            try await hkService.saveVitaminD(estimatedIU: iu, start: session.start, end: session.end ?? Date())
+        } catch {
+            SRLog("AppState: HealthKit saveVitaminD failed: \(error)", level: .error)
         }
 
         todaySynthesizedIU += iu
@@ -237,6 +333,8 @@ final class AppState: ObservableObject {
         activeSession = nil
         sessionStartUV = nil
         sessionStartCloudCover = nil
+        // Clear the crash-recovery file now that the session ended cleanly.
+        try? await persistence.saveActiveSession(nil)
     }
 
     func deleteSession(_ session: ExposureSession) {

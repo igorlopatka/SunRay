@@ -33,9 +33,67 @@ enum FitzpatrickSkinType: String, CaseIterable, Codable, Identifiable {
     }
 }
 
+// Clothing coverage levels mapped to approximate exposed skin percentage.
+// Matches the real-world intuition of what people are wearing rather than
+// asking users to estimate an abstract percentage.
+enum ClothingLevel: String, CaseIterable, Codable, Identifiable {
+    case minimal   // swimwear
+    case light     // t-shirt + shorts
+    case moderate  // t-shirt + pants
+    case heavy     // long sleeves + pants
+    case full      // full coverage
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .minimal:  return "Minimal (swimwear)"
+        case .light:    return "Light (t-shirt + shorts)"
+        case .moderate: return "Moderate (t-shirt + pants)"
+        case .heavy:    return "Heavy (long sleeves + pants)"
+        case .full:     return "Full coverage"
+        }
+    }
+
+    var shortName: String {
+        switch self {
+        case .minimal:  return "Minimal"
+        case .light:    return "Light"
+        case .moderate: return "Moderate"
+        case .heavy:    return "Heavy"
+        case .full:     return "Full"
+        }
+    }
+
+    // Approximate exposed body surface area for vitamin D synthesis.
+    var exposedPercent: Double {
+        switch self {
+        case .minimal:  return 80
+        case .light:    return 50
+        case .moderate: return 25
+        case .heavy:    return 10
+        case .full:     return 5
+        }
+    }
+}
+
 struct UserSettings: Codable, Equatable {
     var skinType: FitzpatrickSkinType = .III
+    var age: Int = 30
     var defaultSPF: Int = 15
-    var defaultExposedPercent: Double = 25 // %
+    var defaultClothing: ClothingLevel = .moderate
     var dailyGoalIU: Double = 800 // IU
+
+    // Forward-compatible decoding: missing keys fall back to the declared
+    // defaults rather than throwing. This means adding new fields to this
+    // struct in a future release never breaks existing installs where the
+    // saved JSON predates the field.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        skinType     = try c.decodeIfPresent(FitzpatrickSkinType.self, forKey: .skinType)     ?? .III
+        age          = try c.decodeIfPresent(Int.self,                 forKey: .age)          ?? 30
+        defaultSPF   = try c.decodeIfPresent(Int.self,                 forKey: .defaultSPF)   ?? 15
+        defaultClothing = try c.decodeIfPresent(ClothingLevel.self,    forKey: .defaultClothing) ?? .moderate
+        dailyGoalIU  = try c.decodeIfPresent(Double.self,              forKey: .dailyGoalIU)  ?? 800
+    }
 }

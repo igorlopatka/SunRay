@@ -11,20 +11,53 @@ struct HistoryTabView: View {
     @EnvironmentObject private var appState: AppState
     @State private var showingDeleteConfirmation = false
     @State private var sessionToDelete: ExposureSession?
+    @State private var deleteHapticTrigger = false
+
+    // Sessions bucketed by calendar day, newest day first.
+    private var groupedSessions: [(label: String, sessions: [ExposureSession])] {
+        let cal       = Calendar.current
+        let today     = cal.startOfDay(for: Date())
+        let yesterday = cal.date(byAdding: .day, value: -1, to: today)!
+
+        var map: [Date: [ExposureSession]] = [:]
+        for session in appState.allSessions {
+            map[cal.startOfDay(for: session.start), default: []].append(session)
+        }
+        return map.keys.sorted(by: >).map { day in
+            let label: String
+            if day == today        { label = "Today" }
+            else if day == yesterday { label = "Yesterday" }
+            else { label = day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()) }
+            return (label, map[day]!)
+        }
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVStack(spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 0) {
                     if appState.allSessions.isEmpty {
                         emptyStateView
+                            .padding()
                     } else {
-                        ForEach(appState.allSessions) { session in
-                            sessionCard(session)
+                        ForEach(groupedSessions, id: \.label) { group in
+                            // Day header
+                            Text(group.label)
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal)
+                                .padding(.top, 20)
+                                .padding(.bottom, 8)
+
+                            ForEach(group.sessions) { session in
+                                sessionCard(session)
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 12)
+                            }
                         }
                     }
                 }
-                .padding()
+                .padding(.bottom)
             }
             .background(.clear)
             .navigationTitle("History")
@@ -74,9 +107,15 @@ struct HistoryTabView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(session.start.formatted(date: .abbreviated, time: .omitted))
-                            .font(.headline)
-                        Text(session.start.formatted(date: .omitted, time: .shortened))
+                        // The day is shown in the section header; show start→end time here.
+                        if let end = session.end {
+                            Text("\(session.start.formatted(date: .omitted, time: .shortened)) – \(end.formatted(date: .omitted, time: .shortened))")
+                                .font(.headline)
+                        } else {
+                            Text(session.start.formatted(date: .omitted, time: .shortened))
+                                .font(.headline)
+                        }
+                        Text(session.skinType.displayName)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -84,16 +123,14 @@ struct HistoryTabView: View {
                     Spacer()
 
                     if let end = session.end {
-                        let duration = end.timeIntervalSince(session.start)
-                        Text("\(Int(duration / 60)) min")
-                            .font(.title3.bold().monospacedDigit())
-                            .foregroundStyle(
-                                .linearGradient(
-                                    colors: [.blue, .cyan],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
+                        let totalMin = Int(end.timeIntervalSince(session.start) / 60)
+                        let rem = totalMin % 60
+                        let durationText = totalMin >= 60
+                            ? (rem == 0 ? "\(totalMin / 60)h" : "\(totalMin / 60)h \(rem)m")
+                            : "\(totalMin) min"
+                        Text(durationText)
+                            .font(.subheadline.bold().monospacedDigit())
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -104,7 +141,9 @@ struct HistoryTabView: View {
                         Text("Vitamin D")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("\(Int(session.estimatedIU ?? 0)) IU")
+                        // estimatedIU is nil when the app was killed mid-session;
+                        // show em-dash rather than a misleading "0 IU".
+                        Text(session.estimatedIU.map { "\(Int($0)) IU" } ?? "—")
                             .font(.body.bold().monospacedDigit())
                     }
 
@@ -123,11 +162,11 @@ struct HistoryTabView: View {
                         .frame(height: 32)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Skin")
+                        Text("Clothing")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("\(Int(session.exposedSkinPercent))%")
-                            .font(.body.bold().monospacedDigit())
+                        Text(session.clothing.shortName)
+                            .font(.body.bold())
                     }
 
                     Spacer()
@@ -135,11 +174,13 @@ struct HistoryTabView: View {
                     Button(role: .destructive) {
                         sessionToDelete = session
                         showingDeleteConfirmation = true
+                        deleteHapticTrigger.toggle()
                     } label: {
                         Image(systemName: "trash")
                             .font(.body)
                             .foregroundStyle(.red)
                     }
+                    .sensoryFeedback(.warning, trigger: deleteHapticTrigger)
                 }
             }
         }

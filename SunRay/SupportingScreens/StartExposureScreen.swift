@@ -5,24 +5,26 @@ struct StartExposureScreen: View {
     @EnvironmentObject private var appState: AppState
 
     @State private var spf: Int
-    @State private var exposedPercent: Double
+    @State private var clothing: ClothingLevel
+    @State private var hapticTrigger = false
 
-    init() {
-        _spf = State(initialValue: 15)
-        _exposedPercent = State(initialValue: 25)
+    init(initialSPF: Int, initialClothing: ClothingLevel) {
+        _spf = State(initialValue: max(1, initialSPF))
+        _clothing = State(initialValue: initialClothing)
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Session Settings") {
-                    Stepper("SPF \(spf)", value: $spf, in: 1...100)
-                    HStack {
-                        Text("Exposed Skin")
-                        Spacer()
-                        Text("\(Int(exposedPercent))%")
+                    Stepper("SPF \(spf)", value: $spf, in: 1...50)
+
+                    Picker("Clothing", selection: $clothing) {
+                        ForEach(ClothingLevel.allCases) { level in
+                            Text(level.displayName).tag(level)
+                        }
                     }
-                    Slider(value: $exposedPercent, in: 0...100, step: 5)
+
                     Picker("Skin Type", selection: $appState.settings.skinType) {
                         ForEach(FitzpatrickSkinType.allCases) { type in
                             Text(type.displayName).tag(type)
@@ -37,7 +39,8 @@ struct StartExposureScreen: View {
                         cloudCover: appState.cloudCover ?? 0,
                         skinType: appState.settings.skinType,
                         spf: spf,
-                        exposedPercent: exposedPercent
+                        exposedPercent: clothing.exposedPercent,
+                        age: appState.settings.age
                     )
                     Section("Estimate") {
                         Text("~\(Int(iuPer30)) IU in 30 min under current conditions.")
@@ -54,21 +57,17 @@ struct StartExposureScreen: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(appState.isSessionActive ? "Update" : "Start") {
                         if appState.isSessionActive {
-                            appState.updateActiveSession(spf: spf, exposedPercent: exposedPercent)
+                            appState.updateActiveSession(spf: spf, clothing: clothing)
                         } else {
-                            appState.startSession(spf: spf, exposedPercent: exposedPercent)
+                            appState.startSession(spf: spf, clothing: clothing)
                         }
+                        hapticTrigger.toggle()
                         dismiss()
                     }
                     .buttonStyle(.borderedProminent)
+                    .sensoryFeedback(.success, trigger: hapticTrigger)
                 }
-            }
-            .onAppear {
-                spf = appState.isSessionActive ? (appState.activeSession?.spf ?? appState.settings.defaultSPF) : appState.settings.defaultSPF
-                spf = max(1, spf)
-                exposedPercent = appState.isSessionActive ? (appState.activeSession?.exposedSkinPercent ?? appState.settings.defaultExposedPercent) : appState.settings.defaultExposedPercent
             }
         }
     }
 }
-

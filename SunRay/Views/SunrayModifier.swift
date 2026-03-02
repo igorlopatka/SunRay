@@ -2,15 +2,17 @@ import SwiftUI
 
 struct SunrayModifier: ViewModifier {
     var opacity: Double = 0.6
+    var uvIndex: Float = 5.0
     func body(content: Content) -> some View {
         ZStack {
             content
-            SunrayView()
+            SunrayView(uvIndex: uvIndex)
                 .blendMode(.screen)
                 .allowsHitTesting(false)
                 .opacity(opacity)
                 .ignoresSafeArea()
-            // Top-right toggle + debug panel (visible at runtime)
+#if DEBUG
+            // Debug toggle — only visible in development builds, stripped from release.
             VStack {
                 HStack {
                     Spacer()
@@ -34,12 +36,13 @@ struct SunrayModifier: ViewModifier {
                 Spacer()
             }
             .allowsHitTesting(true)
+#endif
         }
     }
 }
 
 extension View {
-    func sunrays(opacity: Double = 0.6) -> some View {
-        modifier(SunrayModifier(opacity: opacity))
+    func sunrays(opacity: Double = 0.6, uvIndex: Float = 5.0) -> some View {
+        modifier(SunrayModifier(opacity: opacity, uvIndex: uvIndex))
     }
 }

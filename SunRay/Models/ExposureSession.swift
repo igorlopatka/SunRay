@@ -5,16 +5,16 @@ struct ExposureSession: Identifiable, Codable {
     var start: Date
     var end: Date?
     var spf: Int
-    var exposedSkinPercent: Double
+    var clothing: ClothingLevel
     var skinType: FitzpatrickSkinType
     var estimatedIU: Double?
 
-    init(start: Date, end: Date?, spf: Int, exposedSkinPercent: Double, skinType: FitzpatrickSkinType, estimatedIU: Double? = nil) {
+    init(start: Date, end: Date?, spf: Int, clothing: ClothingLevel, skinType: FitzpatrickSkinType, estimatedIU: Double? = nil) {
         self.id = UUID()
         self.start = start
         self.end = end
         self.spf = spf
-        self.exposedSkinPercent = exposedSkinPercent
+        self.clothing = clothing
         self.skinType = skinType
         self.estimatedIU = estimatedIU
     }
