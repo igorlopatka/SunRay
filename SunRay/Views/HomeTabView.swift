@@ -34,7 +34,7 @@ struct HomeTabView: View {
             .refreshable {
                 await appState.refreshEnvironmentalData(showAlertOnFailure: true)
             }
-            .background(.clear)
+            .sunrayBackground(uvIndex: Float(appState.currentUVIndex ?? 5.0))
             .navigationTitle("SunRay")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -67,7 +67,6 @@ struct HomeTabView: View {
                 await appState.refreshEnvironmentalData(showAlertOnFailure: true)
             }
         }
-        .sunrayBackground(opacity: 0.24, uvIndex: Float(appState.currentUVIndex ?? 5.0))
         .toolbarBackground(.hidden, for: .navigationBar)
     }
 

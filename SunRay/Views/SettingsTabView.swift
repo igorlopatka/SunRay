@@ -21,13 +21,12 @@ struct SettingsTabView: View {
                 }
                 .padding()
             }
-            .background(.clear)
+            .sunrayBackground(uvIndex: Float(appState.currentUVIndex ?? 5.0))
             .navigationTitle("Settings")
             .onChange(of: appState.settings) {
                 Task { await appState.saveSettings() }
             }
         }
-        .sunrayBackground(opacity: 0.2, uvIndex: Float(appState.currentUVIndex ?? 5.0))
         .toolbarBackground(.hidden, for: .navigationBar)
     }
 
