@@ -42,15 +42,12 @@ struct SunrayModifier: ViewModifier {
 }
 
 struct SunrayBackgroundModifier: ViewModifier {
-    var opacity: Double = 0.22
     var uvIndex: Float = 5.0
 
     func body(content: Content) -> some View {
         ZStack {
             SunrayView(uvIndex: uvIndex)
-                .blendMode(.plusLighter)
                 .allowsHitTesting(false)
-                .opacity(opacity)
                 .ignoresSafeArea()
 
             content
@@ -63,7 +60,7 @@ extension View {
         modifier(SunrayModifier(opacity: opacity, uvIndex: uvIndex))
     }
 
-    func sunrayBackground(opacity: Double = 0.22, uvIndex: Float = 5.0) -> some View {
-        modifier(SunrayBackgroundModifier(opacity: opacity, uvIndex: uvIndex))
+    func sunrayBackground(uvIndex: Float = 5.0) -> some View {
+        modifier(SunrayBackgroundModifier(uvIndex: uvIndex))
     }
 }

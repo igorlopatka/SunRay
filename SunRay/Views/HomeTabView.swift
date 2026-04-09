@@ -67,7 +67,7 @@ struct HomeTabView: View {
                 await appState.refreshEnvironmentalData(showAlertOnFailure: true)
             }
         }
-        .sunrayBackground(opacity: 0.24, uvIndex: Float(appState.currentUVIndex ?? 5.0))
+        .sunrayBackground(uvIndex: Float(appState.currentUVIndex ?? 5.0))
         .toolbarBackground(.hidden, for: .navigationBar)
     }
 
