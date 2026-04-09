@@ -385,8 +385,32 @@ fragment float4 fs_main(VertexOut in [[stage_in]],
     // Apply brightness
     float3 col = glassColor * brightness;
 
-    // Enhanced alpha with fresnel for glass edges
-    float alpha = clamp(brightness * (1.0 + fresnelEffect * 0.3) + sparkleAmount * 0.2, 0.0, 1.0);
+    // === SKY BACKGROUND FILL ===
+    // Always render a warm sky so the shader fills the whole background,
+    // not just the area immediately around the sun disc.
 
-    return float4(col, alpha);
+    float2 sunFlipped = float2(u.sunPos.x, 1.0 - u.sunPos.y);
+    float sunDist2d = length((uv - sunFlipped) * float2(u.aspect, 1.0));
+
+    // Warm golden sky near the sun, softening toward the edges.
+    float3 skyHorizon = float3(1.00, 0.88, 0.52);  // warm golden horizon
+    float3 skyZenith  = float3(0.98, 0.82, 0.42);  // slightly deeper gold at zenith
+    float3 skyBase    = mix(skyHorizon, skyZenith, uv.y);
+
+    // Extra brightening halo around the actual sun position.
+    float halo = exp(-sunDist2d * sunDist2d * 3.0);
+    skyBase = mix(skyBase, float3(1.0, 0.97, 0.85), halo * 0.55);
+
+    // Modulate sky warmth/brightness by UV intensity (cool-dim at low UV,
+    // bright-golden at high UV) — same scale factor the rays already use.
+    float t = clamp(u.intensity / 1.20, 0.0, 1.0);  // normalise back from uvIntensity range
+    float skyBrightness = mix(0.30, 0.65, t);
+
+    float3 skyColor = skyBase * skyBrightness;
+
+    // Blend: sky is the base, rays add on top.
+    float3 finalColor = skyColor + col * 1.2;
+
+    // Always fully opaque — this shader IS the background, not an overlay.
+    return float4(clamp(finalColor, 0.0, 1.0), 1.0);
 }

@@ -67,6 +67,8 @@ struct HomeTabView: View {
                 await appState.refreshEnvironmentalData(showAlertOnFailure: true)
             }
         }
+        .sunrayBackground(opacity: 0.24, uvIndex: Float(appState.currentUVIndex ?? 5.0))
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private var header: some View {
@@ -87,11 +89,6 @@ struct HomeTabView: View {
                     .lineLimit(1)
             }
             Spacer()
-            Image(systemName: "sun.max.fill")
-                .symbolRenderingMode(.multicolor)
-                .font(.system(size: 44))
-                .symbolEffect(.variableColor.iterative.dimInactiveLayers.nonReversing)
-                .symbolEffect(.breathe)
         }
         .padding()
         .background {

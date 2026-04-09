@@ -73,6 +73,8 @@ struct HistoryTabView: View {
                 Text("Are you sure you want to delete this session?")
             }
         }
+        .sunrayBackground(opacity: 0.2, uvIndex: Float(appState.currentUVIndex ?? 5.0))
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private var emptyStateView: some View {

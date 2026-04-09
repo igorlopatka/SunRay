@@ -55,26 +55,29 @@ struct AnimatedMeshGradient: View {
     var body: some View {
         TimelineView(.animation) { timeline in
             let time = timeline.date.timeIntervalSinceReferenceDate
+            let points: [SIMD2<Float>] = [
+                meshPoint(x: 0 + sin(time * 0.5) * 0.1, y: 0 + cos(time * 0.3) * 0.1),
+                meshPoint(x: 0.5 + sin(time * 0.7) * 0.1, y: 0 + cos(time * 0.4) * 0.1),
+                meshPoint(x: 1 + sin(time * 0.6) * 0.1, y: 0 + cos(time * 0.5) * 0.1),
+                meshPoint(x: 0 + sin(time * 0.4) * 0.1, y: 0.5 + cos(time * 0.6) * 0.1),
+                meshPoint(x: 0.5 + sin(time * 0.8) * 0.1, y: 0.5 + cos(time * 0.7) * 0.1),
+                meshPoint(x: 1 + sin(time * 0.5) * 0.1, y: 0.5 + cos(time * 0.8) * 0.1),
+                meshPoint(x: 0 + sin(time * 0.3) * 0.1, y: 1 + cos(time * 0.9) * 0.1),
+                meshPoint(x: 0.5 + sin(time * 0.9) * 0.1, y: 1 + cos(time * 1.0) * 0.1),
+                meshPoint(x: 1 + sin(time * 0.4) * 0.1, y: 1 + cos(time * 0.6) * 0.1)
+            ]
 
             MeshGradient(
                 width: 3,
                 height: 3,
-                points: [
-                    .init(0 + sin(time * 0.5) * 0.1, 0 + cos(time * 0.3) * 0.1),
-                    .init(0.5 + sin(time * 0.7) * 0.1, 0 + cos(time * 0.4) * 0.1),
-                    .init(1 + sin(time * 0.6) * 0.1, 0 + cos(time * 0.5) * 0.1),
-
-                    .init(0 + sin(time * 0.4) * 0.1, 0.5 + cos(time * 0.6) * 0.1),
-                    .init(0.5 + sin(time * 0.8) * 0.1, 0.5 + cos(time * 0.7) * 0.1),
-                    .init(1 + sin(time * 0.5) * 0.1, 0.5 + cos(time * 0.8) * 0.1),
-
-                    .init(0 + sin(time * 0.3) * 0.1, 1 + cos(time * 0.9) * 0.1),
-                    .init(0.5 + sin(time * 0.9) * 0.1, 1 + cos(time * 1.0) * 0.1),
-                    .init(1 + sin(time * 0.4) * 0.1, 1 + cos(time * 0.6) * 0.1)
-                ],
+                points: points,
                 colors: colors
             )
         }
+    }
+
+    private func meshPoint(x: Double, y: Double) -> SIMD2<Float> {
+        SIMD2(Float(x), Float(y))
     }
 }
 

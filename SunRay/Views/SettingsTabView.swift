@@ -27,6 +27,8 @@ struct SettingsTabView: View {
                 Task { await appState.saveSettings() }
             }
         }
+        .sunrayBackground(opacity: 0.2, uvIndex: Float(appState.currentUVIndex ?? 5.0))
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private var profileSection: some View {

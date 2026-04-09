@@ -84,6 +84,8 @@ struct UserSettings: Codable, Equatable {
     var defaultClothing: ClothingLevel = .moderate
     var dailyGoalIU: Double = 800 // IU
 
+    init() {}
+
     // Forward-compatible decoding: missing keys fall back to the declared
     // defaults rather than throwing. This means adding new fields to this
     // struct in a future release never breaks existing installs where the

@@ -22,7 +22,8 @@ struct SunrayView: UIViewRepresentable {
             SRLog("SunrayView: SunrayRenderer failed to initialize; Metal overlay disabled", level: .error)
         }
         mtk.isUserInteractionEnabled = false
-        mtk.backgroundColor = .clear
+        mtk.isOpaque = true
+        mtk.backgroundColor = UIColor(red: 1.0, green: 0.88, blue: 0.52, alpha: 1)
         return mtk
     }
 
