@@ -50,6 +50,7 @@ struct MainTabView: View {
                     .tag(3)
             }
             .tint(.yellow)
+            .toolbarBackground(.hidden, for: .tabBar)
         }
         .task {
             await appState.bootstrap()

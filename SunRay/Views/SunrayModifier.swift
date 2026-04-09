@@ -45,13 +45,12 @@ struct SunrayBackgroundModifier: ViewModifier {
     var uvIndex: Float = 5.0
 
     func body(content: Content) -> some View {
-        ZStack {
-            SunrayView(uvIndex: uvIndex)
-                .allowsHitTesting(false)
-                .ignoresSafeArea()
-
-            content
-        }
+        content
+            .background {
+                SunrayView(uvIndex: uvIndex)
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
+            }
     }
 }
 
