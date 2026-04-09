@@ -322,23 +322,23 @@ fragment float4 fs_main(VertexOut in [[stage_in]],
     float streakFalloff = 1.0 - smoothstep(0.0, 2.5, dist);
     streakFalloff = pow(streakFalloff, 0.6); // Softer falloff for longer rays
     
-    // God rays should be brighter and more visible
-    float godRays = rayAccumulation * 3.5;
-    float streaks = streakIntensity * streakFalloff * 2.5;
+    // God rays should be visible but not overpowering as a background
+    float godRays = rayAccumulation * 1.2;
+    float streaks = streakIntensity * streakFalloff * 0.8;
     
     // === COMBINE EFFECTS ===
     
     // Distance falloff for overall brightness
     float falloff = exp(-dist * 1.8);
     
-    // Very strong central glow
-    float coreGlow = exp(-dist * 7.0) * 3.5;
+    // Soft central glow
+    float coreGlow = exp(-dist * 7.0) * 1.2;
     
     // Combine all ray effects with emphasis on god rays and streaks
     float finalRays = max(godRays, streaks) * falloff;
     
-    // Add extra boost to make rays more visible
-    finalRays = pow(finalRays, 0.8) * 1.5;
+    // Gentle lift to keep rays visible without overwhelming
+    finalRays = pow(finalRays, 0.8) * 0.5;
     
     // Combine with core glow
     float brightness = (finalRays + coreGlow * 0.6) * u.intensity;
@@ -372,15 +372,15 @@ fragment float4 fs_main(VertexOut in [[stage_in]],
 
     // Caustics for liquid glass light patterns
     float causticPattern = caustics(distortedUV, u.time);
-    glassColor += causticPattern * float3(1.0, 0.95, 0.8) * 0.4 * (1.0 - dist);
+    glassColor += causticPattern * float3(1.0, 0.95, 0.8) * 0.15 * (1.0 - dist);
 
     // Volumetric light scattering through glass
     float3 volumetric = volumetricScatter(uv, float2(u.sunPos.x, 1.0 - u.sunPos.y), u.time, u.aspect);
-    glassColor += volumetric * u.intensity * 0.6;
+    glassColor += volumetric * u.intensity * 0.2;
 
     // Light sparkles/particles
     float sparkleAmount = sparkles(uv, u.time);
-    glassColor += sparkleAmount * float3(1.0, 1.0, 0.9) * u.intensity * 0.8;
+    glassColor += sparkleAmount * float3(1.0, 1.0, 0.9) * u.intensity * 0.25;
 
     // Apply brightness
     float3 col = glassColor * brightness;
@@ -404,12 +404,12 @@ fragment float4 fs_main(VertexOut in [[stage_in]],
     // Modulate sky warmth/brightness by UV intensity (cool-dim at low UV,
     // bright-golden at high UV) — same scale factor the rays already use.
     float t = clamp(u.intensity / 1.20, 0.0, 1.0);  // normalise back from uvIntensity range
-    float skyBrightness = mix(0.30, 0.65, t);
+    float skyBrightness = mix(0.55, 0.85, t);
 
     float3 skyColor = skyBase * skyBrightness;
 
-    // Blend: sky is the base, rays add on top.
-    float3 finalColor = skyColor + col * 1.2;
+    // Blend: sky is the base, rays add subtle warmth on top.
+    float3 finalColor = skyColor + col * 0.4;
 
     // Always fully opaque — this shader IS the background, not an overlay.
     return float4(clamp(finalColor, 0.0, 1.0), 1.0);
